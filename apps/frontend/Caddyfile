@@ -1,0 +1,21 @@
+# Keeps /api same-origin in production, exactly as vite.config.js's dev proxy does
+# — so App.jsx goes on fetching bare `/api/search` and the backend needs no CORS.
+#
+# PORT is injected by Railway. API_URL is the backend over private networking,
+# e.g. http://api.railway.internal:8080 — a runtime variable, not baked into the
+# build, so repointing the API is a variable change rather than a rebuild.
+:{$PORT:8080} {
+	encode gzip
+
+	handle /api/* {
+		reverse_proxy {$API_URL}
+	}
+
+	# Everything else is the SPA. try_files sends unknown paths to index.html;
+	# it sits inside `handle` so it can never swallow an /api request.
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

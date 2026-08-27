@@ -1,0 +1,22 @@
+# Read from the build CONTEXT root, which is the repo root for the two python
+# images — apps/backend/Dockerfile and apps/cron/Dockerfile are both built with
+# `-f <path> .`, so a .dockerignore next to either one would be ignored. The
+# frontend builds from its own directory and has its own.
+#
+# Patterns are matched against the whole relative path, so the nested ones need
+# an explicit **/ — a bare `.venv/` would only ever match one at the root, and
+# every venv now lives inside apps/.
+#
+# data/cache alone is >100MB of scraped HTTP responses — the container refetches
+# live anyway (gather always runs with the cache off), so none of it belongs in
+# the build context.
+data/
+.git/
+.env
+**/.venv/
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+
+# Neither python image serves the SPA; the web service is apps/frontend's own.
+apps/frontend/

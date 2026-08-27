@@ -1,0 +1,4 @@
+# Read from this directory, which is the build context for apps/frontend/Dockerfile.
+node_modules
+dist
+.gitignore
