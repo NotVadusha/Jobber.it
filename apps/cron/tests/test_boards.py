@@ -1,6 +1,3 @@
-"""boards.json is the scrape's target list, so a malformed or shrunken one is a
-silent coverage loss. OPTIONS binds to it at import — that is the contract."""
-
 import json
 
 import pytest

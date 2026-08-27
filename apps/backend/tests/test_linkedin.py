@@ -1,10 +1,3 @@
-"""The actor's output mapping, pinned to a real v1.7 dataset item.
-
-The actor publishes no output schema, so the two things worth holding are that
-this shape maps whole and that a *renamed* field fails loudly rather than
-silently emptying the corpus.
-"""
-
 from importlib import import_module
 
 import pytest
@@ -61,23 +54,17 @@ def test_item_maps_to_a_posting(monkeypatch):
 
 
 def test_tracking_query_string_is_not_part_of_the_url():
-    """refId and trackingId are per-request. Left on, the same posting would
-    look new every run and the corpus would grow a duplicate a day."""
     (posting,) = run([ITEM], pytest.MonkeyPatch())
     assert posting.url.endswith("-4370911737")
     assert "?" not in posting.url
 
 
 def test_a_bare_date_becomes_an_aware_timestamp(monkeypatch):
-    """postedAt is date-only. _iso would hand back a naive value, and this is
-    the one source that would then write tz-less into a timestamptz column."""
     (posting,) = run([ITEM], monkeypatch)
     assert posting.posted_at == "2026-02-10T00:00:00+00:00"
 
 
 def test_entities_in_description_text_are_decoded(monkeypatch):
-    """The actor's own flattening leaks raw entities; '&amp;' would otherwise
-    reach the sparse index as a token of its own."""
     (posting,) = run([ITEM], monkeypatch)
     assert "Sales & Commercial" in posting.description_text
     assert "&amp;" not in posting.description_text
@@ -98,8 +85,6 @@ def test_job_id_survives_digits_in_the_slug(monkeypatch):
 
 
 def test_a_renamed_field_raises_instead_of_yielding_nothing(monkeypatch):
-    """scrape() drops postings with an empty description without comment, so an
-    unmapped schema would otherwise read as 'linkedin: 0 postings' forever."""
     renamed = {k: v for k, v in ITEM.items() if k != "descriptionText"}
     renamed["theDescription"] = ITEM["descriptionText"]
     del renamed["descriptionHtml"]
@@ -108,5 +93,4 @@ def test_a_renamed_field_raises_instead_of_yielding_nothing(monkeypatch):
 
 
 def test_an_empty_run_is_not_an_error(monkeypatch):
-    """No new postings in the window is an ordinary day on a daily cron."""
     assert run([], monkeypatch) == []

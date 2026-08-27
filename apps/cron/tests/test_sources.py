@@ -1,7 +1,3 @@
-"""OPTIONS is passed straight into the parsers as **kwargs, so a key the parser
-does not accept is a TypeError at 3am. As toml this was unverifiable; as code it
-is a signature check."""
-
 import inspect
 
 import pytest

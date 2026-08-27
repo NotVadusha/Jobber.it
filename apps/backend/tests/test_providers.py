@@ -1,6 +1,3 @@
-"""`reasoning_effort` is a per-vendor param on a shared transport: DeepSeek and
-the other OpenAI-compatible vendors 400 on it, so the gate is worth a test."""
-
 from types import SimpleNamespace
 
 import pytest
@@ -10,8 +7,6 @@ from jobber import providers
 
 
 class Schema(BaseModel):
-    """Any schema will do — the transport is what is under test, not a caller's
-    shape. Kept local so this file does not reach into a caller for one."""
 
     ok: bool
 
@@ -21,7 +16,6 @@ RAW = Schema(ok=True).model_dump_json()
 
 @pytest.fixture
 def seen(monkeypatch):
-    """Capture the kwargs the OpenAI transport would send, sending nothing."""
     calls = {}
 
     def create(**kwargs):

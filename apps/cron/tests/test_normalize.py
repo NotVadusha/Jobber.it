@@ -1,7 +1,3 @@
-"""The parts of normalize runtime feedback is too slow or costly to catch:
-the extraction schema, `merge`'s columns, and `verbatim_fidelity`, which picks
-the provider."""
-
 import json
 
 from jobber import db
@@ -34,8 +30,6 @@ EXTRACTED = {
 
 
 def test_schema_obeys_structured_output_limits():
-    """Unsupported keywords make the API reject the request outright — one stray
-    `Field(ge=0)` on `Extracted` fails every extraction in the run."""
     schema = Extracted.model_json_schema()
     blob = json.dumps(schema)
     for unsupported in ("minimum", "maximum", "minLength", "maxLength", "multipleOf"):
@@ -50,8 +44,6 @@ def test_schema_obeys_structured_output_limits():
 
 
 def test_merge_yields_exactly_the_postings_columns():
-    """merge's output is written straight back onto the row, so its keys have to
-    be the table's — nothing extra, nothing missing, extracted winning stage 2."""
     record = merge(POSTING, EXTRACTED)
     assert tuple(record) == db.POSTING_FIELDS
     assert record["id"] == POSTING["id"]                    # scraper wins
@@ -72,7 +64,6 @@ def test_fidelity_scores_copied_spans_full():
 
 
 def test_fidelity_catches_paraphrase():
-    """The exact failure mode a cheaper model introduces."""
     record = _record("Own the ETL pipeline layer", "3+ years Python experience needed")
     assert verbatim_fidelity(record) == 0.0
 
@@ -127,8 +118,6 @@ def test_snap_returns_empty_for_empty_input():
 
 
 def test_merge_makes_paraphrased_spans_verbatim():
-    """The point of the whole exercise: fidelity is 1.0 after merge, whatever
-    the model returned, because what gets written is a slice of the source."""
     posting = {"id": "x:1", "source": "x", "description_text": SOURCE}
     extracted = {
         "responsibilities_text": "Designing and shipping Go backend services.",
@@ -147,8 +136,6 @@ def test_unannualize_undoes_a_x12_on_an_annual_band():
 
 
 def test_unannualize_leaves_a_genuine_monthly_conversion_alone():
-    """Djinni prints "to $700" meaning per month, so 8400 is correct and 700
-    appears in the text — the plausibility test is what keeps it from reverting."""
     assert unannualize(8_400, "Salary: to $700") == 8_400
 
 
@@ -157,7 +144,6 @@ def test_unannualize_leaves_a_normal_salary_alone():
 
 
 def test_unannualize_keeps_a_high_value_with_no_matching_figure():
-    """Implausible but unexplained stays put — repairing needs evidence."""
     assert unannualize(1_500_000, "No numbers here.") == 1_500_000
 
 
@@ -166,6 +152,4 @@ def test_unannualize_passes_none_through():
 
 
 def test_unannualize_snaps_to_the_printed_figure_not_the_quotient():
-    """1,886,400 / 12 is 157,200, but the posting prints 156,800 — the model's
-    own rounding must not survive the repair."""
     assert unannualize(1_886_400, "Base pay is $156,800.00 - $235,200.00.") == 156_800

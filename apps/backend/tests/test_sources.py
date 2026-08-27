@@ -1,6 +1,3 @@
-"""Parser checks against recorded fixtures, no network — one posting per source
-asserted end-to-end, so a changed payload fails here instead of scraping empty."""
-
 import pathlib
 
 import pytest
@@ -11,7 +8,6 @@ FIXTURES = pathlib.Path(__file__).parent / "fixtures"
 
 
 class FakeFetcher:
-    """Serves a recorded response regardless of URL."""
 
     def __init__(self, filename: str):
         self.text = (FIXTURES / filename).read_text("utf-8")
@@ -58,7 +54,6 @@ def test_parser_yields_complete_postings(name, fixture, opts):
 
 
 def test_djinni_captures_structured_extras():
-    """Djinni's card metadata is the hint set the stage-2 normalizer relies on."""
     postings = list(REGISTRY["djinni"](FakeFetcher("djinni.html"), keywords=["Python"], max_pages=1))
     first = postings[0]
     assert first.url.startswith("https://djinni.co/jobs/")
@@ -70,7 +65,6 @@ def test_djinni_captures_structured_extras():
 
 @pytest.mark.parametrize("name,fixture,opts", CASES)
 def test_no_nbsp_leaks_into_description(name, fixture, opts):
-    """Including the API sources, whose plain text never passes through html_to_text."""
     for p in REGISTRY[name](FakeFetcher(fixture), **opts):
         assert "\xa0" not in p.description_text
         assert "\xa0" not in p.title

@@ -1,5 +1,3 @@
-"""Config's whole job is failing loudly at startup, so that is what is tested."""
-
 import pytest
 
 from jobber import config

@@ -1,6 +1,3 @@
-"""The title classifier decides what the LLM normalizer is allowed to cost, so
-the sales-side titles that carry an engineering word are the cases that matter."""
-
 import pytest
 
 from jobber.sources import RawPosting, role

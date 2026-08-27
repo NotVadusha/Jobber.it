@@ -1,12 +1,3 @@
-"""`run_actor` against the shape apify-client actually returns.
-
-test_linkedin stubs `run_actor` out entirely, so nothing covered the run
-lifecycle — and a 1.x-style `run["defaultDatasetId"]` sailed through CI into a
-paid production run that scraped 300 jobs and then threw them away on
-`'Run' object has no attribute 'get'`. `model_construct` skips validation: the
-point is attribute access, not that the fixture is a valid API payload.
-"""
-
 import pytest
 from apify_client._models import Run
 
