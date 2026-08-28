@@ -8,9 +8,9 @@ from jobber import db
 from jobber import index as index_mod
 from jobber.http import Fetcher
 
-from . import boot
+from . import boot_no_llm
 
-CHECK_DELAY = 1.5  # seconds between posting-URL checks
+CHECK_DELAY = 1.5
 
 CONFIRM = frozenset({"djinni", "dou", "linkedin"})
 
@@ -31,12 +31,10 @@ SWEEP_MIN = 5
 def candidates(
     rows: list[dict], runs: dict[str, datetime], now: datetime | None = None
 ) -> list[dict]:
-    del now  # RECHECK sources are sorted out by `confirm`, which does the dating
+    del now
     out = []
     for row in rows:
         if row["source"] in RECHECK:
-            # Nominating is not deleting. `confirm` decides which of these are
-            # past MAX_AGE, which the page reports closed, and which stand.
             out.append(row)
             continue
         cutoff = runs.get(row["source"])
@@ -98,11 +96,9 @@ def confirm(
     for row in sorted(rows, key=_oldest_first):
         source = row["source"]
         if expired(row, now):
-            # The clock is the evidence, and it is not ambiguous.
             probed.append((row, GONE, True))
             continue
         if source not in CONFIRM:
-            # Absent from a full enumeration is direct evidence, not a 404.
             probed.append((row, GONE, True))
             continue
         if budget[source] <= 0:
@@ -164,7 +160,7 @@ def main(argv: list[str] | None = None) -> int:
                                      description="purge postings their board stopped listing")
     parser.add_argument("--dry-run", action="store_true", help="report, delete nothing")
     args = parser.parse_args(argv)
-    boot()
+    boot_no_llm()
     return prune(args.dry_run)
 
 

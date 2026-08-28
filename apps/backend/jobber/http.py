@@ -1,6 +1,3 @@
-"""Rate-limited, retrying, disk-cached GET — the cache is reproducibility, not
-speed. Delete data/cache to force a refetch."""
-
 from __future__ import annotations
 
 import hashlib
@@ -60,7 +57,6 @@ class Fetcher:
                 r.raise_for_status()
                 return r.text
             except httpx.HTTPStatusError as e:
-                # 4xx other than rate-limit will not fix itself.
                 if e.response.status_code != 429 and e.response.status_code < 500:
                     raise
                 if attempt == 2:

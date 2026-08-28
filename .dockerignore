@@ -1,6 +1,6 @@
-# Read from the build CONTEXT root, which is the repo root for the two python
-# images — apps/backend/Dockerfile and apps/cron/Dockerfile are both built with
-# `-f <path> .`, so a .dockerignore next to either one would be ignored. The
+# Read from the build CONTEXT root, which is the repo root for the three python
+# images — apps/backend, apps/cron and apps/mcp are all built with
+# `-f <path> .`, so a .dockerignore next to any of them would be ignored. The
 # frontend builds from its own directory and has its own.
 #
 # Patterns are matched against the whole relative path, so the nested ones need

@@ -8,9 +8,10 @@ from jobber import db
 from jobber.http import Fetcher
 from jobber.sources import REGISTRY
 
+from .. import boot_no_llm, noargs
 from .sources import OPTIONS
 
-UPSERT_BATCH = 500  # rows per executemany; keeps one statement off the heap
+UPSERT_BATCH = 500
 
 
 def scrape() -> int:
@@ -20,13 +21,9 @@ def scrape() -> int:
         opts = dict(OPTIONS.get(name, {}))
         delay = opts.pop("delay", None) or 1.0
         seen: set[str] = set()
-        # Before the first request, so started_at precedes every last_seen_at
-        # this run writes — `prune` compares against it.
         run_id = db.start_run(name)
         error = None
         try:
-            # The cache has no TTL, so on a schedule it would re-read the same
-            # responses forever and write a byte-identical corpus.
             with Fetcher(delay=delay, cache=False) as fetch:
                 batch: list[dict] = []
                 for posting in REGISTRY[name](fetch, **opts):
@@ -38,12 +35,10 @@ def scrape() -> int:
                         db.upsert(batch)
                         batch.clear()
                 db.upsert(batch)
-        except Exception as e:  # one dead board must not sink the run
+        except Exception as e:
             error = f"{type(e).__name__}: {e}"
             print(f"  {name}: FAILED after {len(seen)} — {error}", file=sys.stderr)
 
-        # Only a run that enumerated the whole board licenses deletions. Empty
-        # counts as failure: a bad slug answering `{"jobs": []}` looks like success.
         ok = error is None and len(seen) > 0
         db.finish_run(run_id, ok=ok, count=len(seen), error=error)
         if error:
@@ -53,13 +48,10 @@ def scrape() -> int:
         total += len(seen)
 
     print(f"total: {total} -> postgres")
-    # One dead board is a logged partial success, not a failed run.
     return 1 if failed == len(REGISTRY) else 0
 
 
 if __name__ == "__main__":
-    from .. import boot, noargs
-
     noargs("python -m jobber_cron.gather.scrape", __doc__)
-    boot()
+    boot_no_llm()
     raise SystemExit(scrape())

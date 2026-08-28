@@ -27,13 +27,13 @@ META = (
 )
 FIELDS = [*META, "section", "chunk_text"]
 
-BATCH = 96  # hard cap on records per integrated-embedding upsert
-RRF_K = 60  # rank-fusion damping; see rrf()
-RATE_LIMIT_FALLBACK_WAIT = 30  # seconds, when Pinecone's 429 omits Retry-After
-RATE_LIMIT_MAX_WAIT = 300  # cap for the exponential fallback below
+BATCH = 96
+RRF_K = 60
+RATE_LIMIT_FALLBACK_WAIT = 30
+RATE_LIMIT_MAX_WAIT = 300
 
 DENSE_TOKENS_PER_MIN = 250_000
-CHARS_PER_TOKEN = 4  # crude estimate; a real tokenizer isn't worth the dependency
+CHARS_PER_TOKEN = 4
 
 
 def chunks(posting: dict) -> list[dict]:
@@ -59,7 +59,7 @@ def client() -> Pinecone:
     return _PC
 
 
-@lru_cache  # pc.Index() resolves the host over the network — not once per query
+@lru_cache
 def _index(name: str, model: str, create: bool):
     pc = client()
     if create and not pc.has_index(name):
@@ -160,6 +160,13 @@ def search(
     return rrf(runs, top_k)
 
 
+def dedupe_by_posting(hits: list[dict]) -> list[dict]:
+    best: dict[str, dict] = {}
+    for hit in hits:
+        best.setdefault(hit.get("posting_id", hit["id"]), hit)
+    return list(best.values())
+
+
 def rerank(query: str, hits: list[dict], top_n: int = 5) -> list[dict]:
     if not hits:
         return hits
@@ -172,7 +179,5 @@ def rerank(query: str, hits: list[dict], top_n: int = 5) -> list[dict]:
         parameters={"truncate": "END"},
     )
 
-    best: dict[str, dict] = {}
-    for hit in (hits[d.index] | {"score": d.score} for d in result.data):
-        best.setdefault(hit.get("posting_id", hit["id"]), hit)
-    return list(best.values())[:top_n]
+    ranked = [hits[d.index] | {"score": d.score} for d in result.data]
+    return dedupe_by_posting(ranked)[:top_n]

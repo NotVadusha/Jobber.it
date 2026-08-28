@@ -8,8 +8,8 @@ from jobber_cron.prune import (
 )
 
 RUN = datetime(2026, 8, 20, 3, 0, tzinfo=UTC)
-BEFORE = RUN - timedelta(hours=26)   # last seen by the run before this one
-DURING = RUN + timedelta(seconds=30)  # re-found by the latest run
+BEFORE = RUN - timedelta(hours=26)
+DURING = RUN + timedelta(seconds=30)
 
 
 def row(id="greenhouse:1", source="greenhouse", last_seen_at=BEFORE, url="https://x/1"):
@@ -30,7 +30,6 @@ def test_a_source_with_no_successful_run_nominates_nothing():
 
 def test_one_dead_source_cannot_affect_another():
     rows = [row(id="greenhouse:1"), row(id="djinni:1", source="djinni")]
-    # Only djinni completed a run; greenhouse's failed and is absent from `runs`.
     assert [r["id"] for r in candidates(rows, {"djinni": RUN})] == ["djinni:1"]
 
 
@@ -51,8 +50,6 @@ def linkedin_verdicts(rows, fetch, now=RUN):
 
 
 LIVE_PAGE = (200, "<h1>Backend Engineer</h1> sign in to apply")
-# Verified 2026-08-25 on ids 3848970245 / 3848970817: a closed LinkedIn ad 301s
-# to a collection page and LinkedIn labels the hop itself.
 EXPIRED_PAGE = (200, "<h1>11,000+ Senior Data Engineer Jobs</h1>",
                 "https://www.linkedin.com/jobs/senior-data-engineer-jobs?trk=expired_jd_redirect")
 
@@ -91,8 +88,6 @@ def test_a_throttled_probe_keeps_the_posting():
 
 
 def test_probing_is_capped_and_spent_on_the_oldest():
-    # Minutes, not hours: at PROBE_CAP + 5 rows an hourly spread would push the
-    # oldest past MAX_AGE and they would be delisted on the clock, never probed.
     extra = 5
     rows = [aged(id=f"linkedin:{i}", posted_at=RUN - timedelta(days=2, minutes=i))
             for i in range(PROBE_CAP + extra)]
@@ -100,9 +95,7 @@ def test_probing_is_capped_and_spent_on_the_oldest():
     verdicts = linkedin_verdicts(rows, fetch)
 
     assert len(fetch.probed) == PROBE_CAP
-    # Skipped rows get no verdict at all, rather than a guessed one.
     assert verdicts[GONE] == [] and verdicts[UNKNOWN] == []
-    # Budget went to the oldest: the `extra` newest are what got left behind.
     assert set(verdicts[ALIVE]) == {f"linkedin:{i}" for i in range(extra, PROBE_CAP + extra)}
 
 
@@ -131,13 +124,11 @@ def test_the_age_rule_does_not_leak_into_other_sources():
         (404, "", GONE),
         (410, "", GONE),
         (200, "<h1>Backend Engineer</h1> apply now", ALIVE),
-        # Djinni's real banner, verified on a live closed ad 2026-08-20.
         (200, '<div class="fw-medium">The job ad is no longer active</div>', GONE),
-        # Newsletter chrome on every LIVE DOU page; a loose match deletes them all.
         (200, "<span>Реєстрацію по email закрито</span> apply now", ALIVE),
         (403, "blocked", UNKNOWN),
         (500, "oops", UNKNOWN),
-        (0, "", UNKNOWN),          # transport failure — Fetcher.probe's sentinel
+        (0, "", UNKNOWN),
     ],
 )
 def test_classify(status, body, expected):
@@ -185,13 +176,12 @@ def test_chunk_ids_cover_every_id_chunks_would_write():
     posting = {
         "id": "djinni:1", "title": "Backend Engineer", "company": "Keymakr",
         "stack": ["Python"], "requirements_text": "3 years", "description_text": "prose",
-        "responsibilities_text": "",  # empty sections are never written
+        "responsibilities_text": "",
     }
     written = {c["_id"] for c in index.chunks(posting)}
     constructed = {f"djinni:1#{section}" for section in index.SECTIONS}
     assert written <= constructed
     assert written == {"djinni:1#requirements", "djinni:1#description"}
-    # The unwritten third id is harmless: deleting a missing id is a no-op.
     assert constructed - written == {"djinni:1#responsibilities"}
 
 
@@ -247,11 +237,8 @@ def test_the_guard_is_per_source_not_global():
 
 
 def test_combine_folds_clauses_without_a_redundant_wrapper():
-    from jobber import index
-
     assert index.combine([]) is None
     one = {"seniority": {"$in": ["senior"]}}
     assert index.combine([one]) == one
     two = [one, {"years_required": {"$lte": 3}}]
     assert index.combine(two) == {"$and": two}
-

@@ -36,7 +36,6 @@ def test_schema_obeys_structured_output_limits():
         assert unsupported not in blob, f"{unsupported} is not supported in structured outputs"
     assert schema["type"] == "object"
     assert set(schema["required"]) == set(Extracted.model_fields)
-    # Required on every object, or the API rejects the request.
     assert schema["additionalProperties"] is False
     for sub in schema.get("$defs", {}).values():
         if sub.get("type") == "object":
@@ -46,11 +45,11 @@ def test_schema_obeys_structured_output_limits():
 def test_merge_yields_exactly_the_postings_columns():
     record = merge(POSTING, EXTRACTED)
     assert tuple(record) == db.POSTING_FIELDS
-    assert record["id"] == POSTING["id"]                    # scraper wins
+    assert record["id"] == POSTING["id"]
     assert record["title"] == POSTING["title"]
-    assert record["seniority"] == EXTRACTED["seniority"]    # extraction wins
+    assert record["seniority"] == EXTRACTED["seniority"]
     assert record["salary_max"] == EXTRACTED["salary_max"]
-    assert record["salary_min"] is None                     # an extracted null stays null
+    assert record["salary_min"] is None
     assert set(db.STAGE2) <= set(record)
 
 
@@ -82,8 +81,6 @@ def test_fidelity_is_none_when_nothing_to_measure():
     assert verbatim_fidelity(_record("", "")) is None
 
 
-# --- snap: a paraphrased span is relocated onto the source, never invented ---
-
 SOURCE = (
     "About us\n\nWe build things.\n\n"
     "What you'll do:\n- Design and ship backend services in Go\n"
@@ -97,10 +94,10 @@ def test_snap_returns_source_slice_for_a_paraphrase():
     paraphrased = ("Designing and shipping backend services using Go, and owning "
                    "the deployment pipeline from end to end.")
     out = snap(paraphrased, SOURCE)
-    assert out in SOURCE  # the invariant that makes fidelity 1.0
+    assert out in SOURCE
     assert "- Design and ship backend services in Go" in out
     assert "- Own the deployment pipeline end to end" in out
-    assert "Benefits: snacks." not in out  # located the section, not the whole posting
+    assert "Benefits: snacks." not in out
 
 
 def test_snap_leaves_an_already_verbatim_span_intact():
@@ -127,8 +124,6 @@ def test_merge_makes_paraphrased_spans_verbatim():
     record = merge(posting, extracted)
     assert verbatim_fidelity(record) == 1.0
 
-
-# --- unannualize: a x12 applied to already-annual pay is undone, monthly isn't ---
 
 def test_unannualize_undoes_a_x12_on_an_annual_band():
     source = "The salary range for this role is $212,000 - $318,000 per year."

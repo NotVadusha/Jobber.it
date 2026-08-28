@@ -1,15 +1,3 @@
-# Image for both cron services — the gather chain and the prune. Build from the
-# REPO ROOT:
-#
-#     docker build -f apps/cron/Dockerfile .
-#
-# This is the one app that cannot build from its own directory: jobber-cron
-# path-depends on the sibling app (see [tool.uv.sources] in pyproject.toml), so
-# apps/backend has to be inside the context. .dockerignore is read from the
-# context root too.
-#
-# On Railway, set the service's Dockerfile path to apps/cron/Dockerfile and leave
-# the root directory at /.
 FROM python:3.12-slim
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 WORKDIR /app

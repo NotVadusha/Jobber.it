@@ -21,9 +21,9 @@ def test_json_on_disk_matches_what_known_returns():
 
 
 @pytest.mark.parametrize("payload,expected", [
-    ({"jobs": [1, 2, 3]}, 3),      # greenhouse / ashby
-    ([1, 2], 2),                   # lever answers a bare list
-    ({"jobs": []}, 0),             # parked slug — not coverage
+    ({"jobs": [1, 2, 3]}, 3),
+    ([1, 2], 2),
+    ({"jobs": []}, 0),
     ({}, 0),
     ({"jobs": None}, 0),
     ("nonsense", 0),

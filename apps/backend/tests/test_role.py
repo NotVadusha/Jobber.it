@@ -16,7 +16,6 @@ from jobber.sources import RawPosting, role
     ("Data Engineer, Analytics", "data"),
     ("Product Security Engineer", "security"),
     ("Senior iOS Engineer", "mobile"),
-    # Carries an engineering word, is not an engineering job.
     ("Sr. Solutions Engineer", None),
     ("Forward Deployed Engineer, Professional Services", None),
     ("Engineering Manager, Core Platform", None),

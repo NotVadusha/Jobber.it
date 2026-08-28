@@ -4,6 +4,8 @@ import os
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 
+from . import providers
+
 
 class Config(BaseModel):
     model_config = ConfigDict(frozen=True)
@@ -17,7 +19,7 @@ class Config(BaseModel):
     anthropic_api_key: str | None = None
     deepseek_api_key: str | None = None
     openai_api_key: str | None = None
-    
+
     ollama_base_url: str | None = None
 
     apify_token: str | None = None
@@ -30,6 +32,12 @@ class Config(BaseModel):
 
 
 _CONFIG: Config | None = None
+
+
+def use(cfg) -> object:
+    global _CONFIG
+    _CONFIG = cfg
+    return cfg
 
 
 def init() -> Config:
@@ -45,7 +53,6 @@ def init() -> Config:
         if not missing:
             raise SystemExit(f"bad environment: {e}") from None
         raise SystemExit("not set: " + ", ".join(missing)) from None
-    from . import providers  # local: providers imports this module
 
     _CONFIG.require(providers.PROVIDERS[providers.DEFAULT].env_key)
     return _CONFIG

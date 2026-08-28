@@ -4,12 +4,8 @@ import pytest
 
 from jobber.sources.linkedin import linkedin
 
-# `from .linkedin import linkedin` in the package __init__ rebinds the name, so
-# both `jobber.sources.linkedin` and the dotted monkeypatch target resolve to the
-# function, not the module. Ask the import system for the module.
 linkedin_mod = import_module("jobber.sources.linkedin")
 
-# Trimmed from a real run: every key the mapping reads, none it does not.
 ITEM = {
     "id": "4370911737",
     "trackingId": "4n+M2CS3wJcr0FK+nCKcVw==",
@@ -49,7 +45,6 @@ def test_item_maps_to_a_posting(monkeypatch):
     assert posting.location_raw == "Niagara Falls, NY"
     assert posting.extra["industries"] == "Manufacturing"
     assert posting.extra["company_size"] == 68000
-    # "salary": "" is the actor's way of saying no salary, not a value.
     assert posting.extra["salary_text"] is None
 
 
