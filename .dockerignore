@@ -20,3 +20,7 @@ data/
 
 # Neither python image serves the SPA; the web service is apps/frontend's own.
 apps/frontend/
+
+# Root node_modules exists only so `railway config` can resolve railway/iac.
+# No image copies it, but the context is the repo root, so it uploads without this.
+node_modules/
