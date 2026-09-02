@@ -22,7 +22,8 @@ flowchart TB
     direction LR
     parsers["sources/*.py<br/>7 parsers → RawPosting"]
     prov["providers.py<br/>anthropic · openai · deepseek · ollama"]
-    api["router.py<br/>POST /api/search · GET /api/meta"]
+    api["api/app.py<br/>POST /api/search · GET /api/meta"]
+    rank["ranking.py<br/>orchestration · {data,meta} values"]
     pipe["pipeline.run<br/>retrieve → rerank"]
   end
 
@@ -31,7 +32,8 @@ flowchart TB
   end
 
   subgraph fe["apps/frontend — Vite SPA"]
-    ui["App.jsx<br/>query · filters · CV upload · trace"]
+    ui["features/search<br/>query · filters · CV upload · trace"]
+    client["api/client.ts + api/search.ts<br/>axios · camelCase · TanStack Query"]
   end
 
   pg[("Postgres<br/><b>postings</b> — scraped · extracted · state<br/><b>scrape_runs</b> — source, started_at, ok, count<br/><b>api_tokens</b> — sha256 digest, revoked_at")]
@@ -47,11 +49,13 @@ flowchart TB
   idxstep -->|chunks| pc
   prune -->|delete chunks| pc
   prune -->|delisted_at| pg
-  ui -->|/api/search| api
-  api --> pipe
+  ui --> client
+  client -->|/api/search| api
+  api --> rank
+  rank --> pipe
   pipe -->|hybrid + rerank| pc
   api -->|corpus size| pg
-  api -.-> prov
+  rank -.-> prov
   tools -->|hybrid, no rerank| pc
   tools -->|full posting · token check| pg
 ```
@@ -85,9 +89,13 @@ cp .env.example .env    # DATABASE_URL, PINECONE_API_KEY, and the key for provid
 make install            # uv sync all three python apps + npm ci
 make migrate            # create the schema (see Database below for an existing one)
 make test               # parser, prune, normalize, auth and pagination — offline, no network
+make check              # contract freshness, lint, typecheck, import boundaries
+make verify             # check + python suites + playwright
+make verify-full        # verify + production build + API boot — what CI runs
 make serve              # search API on :3000
 make mcp                # MCP server on :3001
 make web                # vite on :5173, proxying /api to :3000 (same-origin, so no CORS)
+make e2e                # playwright (chromium) against the vite dev server
 ```
 
 `providers.DEFAULT` in [providers.py](apps/backend/jobber/providers.py) picks the LLM vendor for both ingestion and search. Its key is required at startup by the two entry points that actually call a model — the API and the normalize step — and by nothing else. `scrape`, `index`, `boards` and `prune` boot on [jobber_cron/config.py](apps/cron/jobber_cron/config.py), the MCP server on [jobber_mcp/config.py](apps/mcp/jobber_mcp/config.py) — each a `Config` declaring only the fields that app can actually use, so those services hold no vendor key at all. Switching vendors is an edit there, not a flag.
@@ -216,6 +224,13 @@ curl -s localhost:3000/api/search -H 'content-type: application/json' \
   -d '{"query": "senior python, remote, kafka"}'
 ```
 
+Every non-streaming response is enveloped: a success is `{"data": ..., "meta": {...}}` and a
+failure is `{"error": {"code", "message", "details"}, "meta": {...}}`. `meta.request_id`
+matches the `X-Request-ID` response header on both. Domain values live in `data`; request and
+execution metadata (`request_id`, `took_ms`, pagination) live in `meta`. Wire keys stay
+`snake_case`; the browser's single axios instance converts every response recursively to
+`camelCase` before feature code sees it.
+
 A query or a CV is first rewritten by an LLM into a **requirements block** — the shape a posting's requirements section has — plus its exact stack tokens. A CV embedded raw retrieves badly: it is a self-description matched against demands, and symmetry beats a raw embedding.
 
 `retrieve → rerank`. Retrieval is hybrid over two indexes, since Pinecone's integrated embedding is per-index: `multilingual-e5-large` for semantics (a sizeable share of the corpus is Ukrainian/Russian) and `pinecone-sparse-english-v0` for exact tokens (NestJS, ClickHouse, k6 — latin-script even inside a UA/RU posting). Their scores are not comparable, so runs merge by **reciprocal rank fusion**, never by score. A `bge-reranker-v2-m3` cross-encoder then cuts the top 20 chunks to 5 postings, deduplicating *after* reranking so three sections of one posting cannot take three of the five slots. Chunks are structure-aware rather than fixed-size, because that is the boundary a query cares about — "5 years of Kubernetes" is a requirement, and a fixed window would cut it in half.
@@ -223,6 +238,41 @@ A query or a CV is first rewritten by an LLM into a **requirements block** — t
 Filters are explicit UI controls, not parsed out of the query, and Pinecone applies them before scoring. Two traps they exist around: an unstated `years_required` is stored as `0` rather than omitted, since a `$lte` filter silently drops records lacking the field; `salary` has no such default, so `min_salary` is applied after the pipeline returns.
 
 The SPA shows the retrieval trace, the query's tokens (tokenized the way the sparse side will, so `c++`, `c#` and `node.js` survive), and the filters that were applied — a hard filter removes matching jobs with no trace in the results. Profile upload is client-side: `File.text()` for `.txt`/`.md`, `pdfjs-dist` lazily imported for `.pdf`; a scanned PDF with no text layer is rejected by name rather than silently searched on an empty profile.
+
+## Architecture and contracts
+
+[CONTEXT.md](CONTEXT.md) holds the canonical domain vocabulary. The surprising decisions are
+recorded in [hash routing](docs/adr/0001-use-hash-routing-for-release-1.md),
+[request-body search](docs/adr/0002-send-search-text-in-request-bodies.md),
+[SSE progress](docs/adr/0003-stream-search-progress-with-sse.md), and
+[OpenAPI browser types](docs/adr/0004-generate-browser-types-from-openapi.md). The seams a
+change usually lands in:
+
+| Concern | Owner |
+|---|---|
+| HTTP transport, middleware, exception mapping | [api/app.py](apps/backend/jobber/api/app.py) |
+| Browser request/response models | [api/contracts.py](apps/backend/jobber/api/contracts.py) |
+| Posting and hard-filter value models | [postings.py](apps/backend/jobber/postings.py) |
+| Semantic ranking orchestration | [ranking.py](apps/backend/jobber/ranking.py) |
+| Corpus metadata (cached) | [catalog.py](apps/backend/jobber/catalog.py) |
+| Pinecone adapter | [pinecone.py](apps/backend/jobber/pinecone.py) |
+| Structured JSON logging | [logging.py](apps/backend/jobber/logging.py) |
+| Axios transport, camelCase, `ApiError` | [api/client.ts](apps/frontend/src/api/client.ts) |
+| Search endpoints, query keys, hooks | [api/search.ts](apps/frontend/src/api/search.ts) |
+
+FastAPI's Pydantic models are the wire source of truth. `make api-contracts` regenerates
+[openapi.json](apps/frontend/openapi.json) and [schema.ts](apps/frontend/src/api/schema.ts);
+both are generated artifacts and `make check` fails when a checked-in copy is stale. Never edit
+them by hand.
+
+Import direction is enforced, not documented: [.importlinter](apps/backend/.importlinter) keeps
+the API layer off the adapters and every lower layer off `jobber.api`, and
+[.oxlintrc.json](apps/frontend/.oxlintrc.json) keeps `lib` below `api` below `features` below
+`app`. Both fail the build on a violation.
+
+Logs are JSON on stdout with `level`, `service`, `module`, `event` and safe metadata. Query text,
+CV text, request and response bodies never appear in them; uvicorn's access log is off for that
+reason.
 
 ## Keeping it current
 
