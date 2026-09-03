@@ -69,6 +69,9 @@ select
     when n = 12 then 'UnindexedBeacon Engineer'
     when n between 40 and 43 then 'SalaryBeacon Engineer'
     when n = 44 then 'DelistedBeacon Engineer'
+    when n = 13 then 'DetailBeacon Platform Engineer'
+    when n = 14 then 'SparseBeacon Engineer'
+    when n = 15 then 'HostileBeacon Engineer'
     else format('Fixture Engineer %s', n)
   end,
   case
@@ -78,6 +81,9 @@ select
   case
     when n = 1 then 'SharedBeta RecentBeacon backend work'
     when n = 6 then 'DescriptionBeacon platform work'
+    when n = 13 then E'DetailBeacon owns the deployment pipeline.\nSecond stored line.'
+    when n = 15 then E'HostileBeacon <script>alert(1)</script>\n- literal dash line start\n'
+      || repeat('z', 400)
     when n = 30 then 'RecentBeacon older posting'
     else format('Fixture description %s', n)
   end,
@@ -130,10 +136,14 @@ select
   end,
   case
     when n = 5 then 'ResponsibilityBeacon owns services'
+    when n = 13 then 'DetailResponsibilityBeacon owns the pipeline'
+    when n = 14 then null
     else 'Own production services'
   end,
   case
     when n = 4 then 'RequirementBeacon distributed systems'
+    when n = 13 then E'DetailRequirementBeacon five years\nSecond requirement line.'
+    when n = 14 then null
     else 'Production engineering experience'
   end,
   case when n = 11 then null else current_timestamp end,
@@ -143,7 +153,10 @@ select
     else current_timestamp - make_interval(hours => n)
          + interval '5 minutes'
   end,
-  current_timestamp,
+  case
+    when n = 44 then current_timestamp - interval '3 days'
+    else current_timestamp
+  end,
   case when n = 44 then current_timestamp else null end
 from fixture;
 

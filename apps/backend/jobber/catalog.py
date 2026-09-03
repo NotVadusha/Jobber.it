@@ -12,8 +12,10 @@ from . import db
 from .postings import (
     CatalogueSort,
     PostedWithin,
+    PostingDetail,
     PostingFilters,
     PostingSummary,
+    ResolvedPosting,
     SourceId,
 )
 
@@ -38,6 +40,18 @@ _SUMMARY_FIELDS = (
 )
 _SUMMARY_COLUMNS_SQL = ", ".join(_SUMMARY_FIELDS)
 
+_RESOLVED_FIELDS = (*_SUMMARY_FIELDS, "delisted_at")
+_RESOLVED_COLUMNS_SQL = ", ".join(_RESOLVED_FIELDS)
+
+_DETAIL_FIELDS = (
+    *_RESOLVED_FIELDS,
+    "last_seen_at",
+    "description_text",
+    "requirements_text",
+    "responsibilities_text",
+)
+_DETAIL_COLUMNS_SQL = ", ".join(_DETAIL_FIELDS)
+
 _POSTED_WITHIN_INTERVAL = {
     PostedWithin.DAY: "1 day",
     PostedWithin.WEEK: "7 days",
@@ -56,6 +70,10 @@ _ORDER_SQL = {
 
 
 class CatalogueUnavailable(RuntimeError):
+    pass
+
+
+class PostingNotFound(LookupError):
     pass
 
 
@@ -137,6 +155,61 @@ def _posting_summary(row: Mapping[str, object]) -> PostingSummary:
     payload = {field: row[field] for field in _SUMMARY_FIELDS}
     payload["stack"] = payload["stack"] or []
     return PostingSummary.model_validate(payload)
+
+
+def _text(value: object) -> str | None:
+    if not isinstance(value, str):
+        return None
+    return value.strip() or None
+
+
+def _resolved_payload(row: Mapping[str, object]) -> dict[str, object]:
+    payload = {field: row[field] for field in _RESOLVED_FIELDS}
+    payload["stack"] = payload["stack"] or []
+    return payload
+
+
+def _resolved_posting(row: Mapping[str, object]) -> ResolvedPosting:
+    return ResolvedPosting.model_validate(_resolved_payload(row))
+
+
+def _posting_detail(row: Mapping[str, object]) -> PostingDetail:
+    return PostingDetail.model_validate({
+        **_resolved_payload(row),
+        "last_seen_at": row["last_seen_at"],
+        "description": _text(row["description_text"]),
+        "requirements": _text(row["requirements_text"]),
+        "responsibilities": _text(row["responsibilities_text"]),
+    })
+
+
+def posting_detail(posting_id: str) -> PostingDetail:
+    try:
+        with db.conn() as connection:
+            row = connection.execute(
+                f"select {_DETAIL_COLUMNS_SQL} from postings where id = %s",
+                (posting_id,),
+            ).fetchone()
+    except (psycopg.Error, PoolTimeout):
+        raise CatalogueUnavailable from None
+
+    if row is None:
+        raise PostingNotFound
+    return _posting_detail(row)
+
+
+def posting_lookup(ids: Sequence[str]) -> tuple[ResolvedPosting, ...]:
+    try:
+        with db.conn() as connection:
+            rows = connection.execute(
+                f"select {_RESOLVED_COLUMNS_SQL} from postings"
+                " where id = any(%s::text[]) order by id",
+                (list(ids),),
+            ).fetchall()
+    except (psycopg.Error, PoolTimeout):
+        raise CatalogueUnavailable from None
+
+    return tuple(_resolved_posting(row) for row in rows)
 
 
 @lru_cache(maxsize=1)

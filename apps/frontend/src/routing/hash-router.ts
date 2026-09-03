@@ -2,8 +2,9 @@ import { useEffect, useMemo, useSyncExternalStore } from 'react'
 
 import {
   commitCanonicalHash,
-  currentReturnContext,
+  currentEntryId,
   ensureCurrentHistoryEntry,
+  jobsReturnContext,
   rememberCurrentJobsScroll,
   ROUTE_EVENT,
 } from '@/routing/navigation-context'
@@ -46,18 +47,32 @@ export const navigate = (route: Route, mode: NavigationMode = 'push'): void => {
   commitCanonicalHash(hash, { mode })
 }
 
+export const isPlainPrimaryClick = (event: MouseEvent): boolean => {
+  return (
+    event.button === 0 &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.shiftKey &&
+    !event.altKey
+  )
+}
+
 export const navigateFromJobsToJob = (postingId: string): void => {
   const canonicalJobsHash = formatRoute(parseHash(currentHash()))
   commitCanonicalHash(canonicalJobsHash, { mode: 'replace' })
   rememberCurrentJobsScroll(window.scrollY)
   commitCanonicalHash(formatRoute({ name: 'job', postingId }), {
     mode: 'push',
-    fromJobs: { hash: canonicalJobsHash, scrollY: window.scrollY },
+    fromJobs: {
+      hash: canonicalJobsHash,
+      scrollY: window.scrollY,
+      entryId: currentEntryId(),
+    },
   })
 }
 
 export const returnToJobs = (): void => {
-  if (currentReturnContext()) {
+  if (jobsReturnContext()) {
     window.history.back()
     return
   }

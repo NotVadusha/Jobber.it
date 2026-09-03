@@ -2,11 +2,8 @@ import { useState, type ReactElement } from 'react'
 
 import type { BestMatchData } from '@/api/search'
 import { BestMatchCard } from '@/features/search/BestMatchCard'
-import {
-  REVEAL_STEP,
-  UNCALIBRATED_SCORE_NOTICE,
-  revealLabel,
-} from '@/features/search/best-match-state'
+import { UNCALIBRATED_SCORE_NOTICE } from '@/features/jobs/ranking-score'
+import { REVEAL_STEP, revealLabel } from '@/features/search/best-match-state'
 import { PageState } from '@/ui/PageState'
 
 export const BestMatchResults = ({

@@ -2,8 +2,10 @@ import type { ReactElement } from 'react'
 
 import type { PostgresSearchResponse } from '@/api/search'
 import { HighlightedText } from '@/features/jobs/HighlightedText'
+import { JobLink } from '@/features/jobs/JobLink'
 import { PostingFacts } from '@/features/jobs/PostingFacts'
 import { PostingStack } from '@/features/jobs/PostingStack'
+import { SaveJobButton } from '@/features/saved/SaveJobButton'
 
 type CataloguePosting = PostgresSearchResponse['data'][number]
 
@@ -27,9 +29,21 @@ export const CataloguePostingCard = ({
         {String(resultNumber).padStart(2, '0')}
       </span>
       <article className="min-w-0">
-        <h3 id={titleId} className="text-base font-semibold leading-snug text-primary sm:text-lg">
-          <HighlightedText text={posting.title} terms={terms} />
-        </h3>
+        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+          <h3 id={titleId} className="min-w-0 text-base font-semibold leading-snug text-primary sm:text-lg">
+            <JobLink postingId={posting.id}>
+              <HighlightedText text={posting.title} terms={terms} />
+            </JobLink>
+          </h3>
+          <SaveJobButton
+            target={{
+              id: posting.id,
+              title: posting.title,
+              company: posting.company,
+              source: posting.source,
+            }}
+          />
+        </div>
 
         <PostingFacts posting={posting} terms={terms} />
         <PostingStack stack={posting.stack ?? []} terms={terms} />

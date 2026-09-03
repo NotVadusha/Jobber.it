@@ -12,6 +12,7 @@ import { WelcomeDashboard } from '@/features/catalogue/WelcomeDashboard'
 import { navigate } from '@/routing/hash-router'
 import type { BrowseSort, JobsUrlFilters, JobsUrlState } from '@/routing/jobs-model'
 import { normalizeJobsState } from '@/routing/jobs-state'
+import { useJobsScrollRestoration } from '@/routing/scroll-restoration'
 
 export type AllPostingsViewProps = {
   state: JobsUrlState
@@ -41,6 +42,7 @@ export const AllPostingsView = ({
     refetch,
   } = usePostgresSearchQuery(request)
   const pagination = data?.meta.pagination
+  useJobsScrollRestoration(!isPending && !isPlaceholderData)
   const activeCount = activeCatalogueFilterCount(draftFilters)
   const welcomeState = normalizeJobsState({
     ...state,
