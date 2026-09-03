@@ -5,14 +5,14 @@ import uuid
 from collections.abc import Awaitable, Callable, Iterator
 from typing import Annotated, Any
 
-from fastapi import Depends, FastAPI, Request, Response
+from fastapi import Depends, FastAPI, Path, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.sse import EventSourceResponse
 
 from .. import catalog, config, ranking
 from ..logging import get_logger
-from ..postings import PostingSummary
+from ..postings import PostingDetail, PostingSummary, ResolvedPosting
 from . import ratelimit, stream
 from .contracts import (
     BestMatchData,
@@ -23,6 +23,7 @@ from .contracts import (
     ErrorResponse,
     MetaData,
     PaginationMeta,
+    PostingLookupRequest,
     ResponseMeta,
     SearchCompleted,
     SearchFailed,
@@ -39,6 +40,10 @@ app = FastAPI(title="jobber", description="Search API over the RAG pipeline")
 
 def _request_id(request: Request) -> str:
     return request.state.request_id
+
+
+def _log_path(request: Request) -> str:
+    return getattr(request.scope.get("route"), "path", None) or request.url.path
 
 
 def _error_response(
@@ -125,7 +130,7 @@ async def request_metadata(
         "HTTP request completed",
         request_id=_request_id(request),
         method=request.method,
-        path=request.url.path,
+        path=_log_path(request),
         status=response.status_code,
         took_ms=round(took_ms, 1),
     )
@@ -229,10 +234,23 @@ async def catalogue_unavailable(
         "catalogue_unavailable",
         "Postings catalogue is temporarily unavailable",
         request_id=_request_id(request),
-        path=request.url.path,
+        path=_log_path(request),
     )
     status_code, code, message = _failure(error)
     return _error_response(request, status_code=status_code, code=code, message=message)
+
+
+@app.exception_handler(catalog.PostingNotFound)
+async def posting_not_found(
+    request: Request,
+    _error: catalog.PostingNotFound,
+) -> JSONResponse:
+    return _error_response(
+        request,
+        status_code=404,
+        code=ErrorCode.POSTING_NOT_FOUND,
+        message="That posting is not in the catalogue.",
+    )
 
 
 @app.exception_handler(Exception)
@@ -308,6 +326,59 @@ def query_postings(
                 total_items=result.total_items,
                 total_pages=result.total_pages,
             ),
+            took_ms=round((time.perf_counter() - started) * 1000, 1),
+        ),
+    )
+
+
+@app.get(
+    "/api/postings/{posting_id}",
+    response_model=SuccessResponse[PostingDetail],
+    responses={
+        404: {"model": ErrorResponse},
+        422: {"model": ErrorResponse},
+        500: {"model": ErrorResponse},
+        503: {"model": ErrorResponse},
+    },
+)
+def posting(
+    request: Request,
+    response: Response,
+    posting_id: Annotated[str, Path(max_length=512)],
+) -> SuccessResponse[PostingDetail]:
+    started = time.perf_counter()
+    detail = catalog.posting_detail(posting_id)
+    response.headers["Cache-Control"] = "no-store"
+    return SuccessResponse(
+        data=detail,
+        meta=ResponseMeta(
+            request_id=_request_id(request),
+            took_ms=round((time.perf_counter() - started) * 1000, 1),
+        ),
+    )
+
+
+@app.post(
+    "/api/postings/lookup",
+    response_model=SuccessResponse[list[ResolvedPosting]],
+    responses={
+        422: {"model": ErrorResponse},
+        500: {"model": ErrorResponse},
+        503: {"model": ErrorResponse},
+    },
+)
+def posting_lookup(
+    request: Request,
+    response: Response,
+    payload: PostingLookupRequest,
+) -> SuccessResponse[list[ResolvedPosting]]:
+    started = time.perf_counter()
+    resolved = catalog.posting_lookup(payload.ids)
+    response.headers["Cache-Control"] = "no-store"
+    return SuccessResponse(
+        data=list(resolved),
+        meta=ResponseMeta(
+            request_id=_request_id(request),
             took_ms=round((time.perf_counter() - started) * 1000, 1),
         ),
     )

@@ -1,9 +1,19 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "oxc", "import", "typescript"],
+  "plugins": [
+    "react",
+    "oxc",
+    "import",
+    "typescript"
+  ],
   "rules": {
     "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }],
+    "react/only-export-components": [
+      "warn",
+      {
+        "allowConstantExport": true
+      }
+    ],
     "import/no-cycle": "error",
     "import/no-relative-parent-imports": "error",
     "no-restricted-globals": [
@@ -22,7 +32,9 @@
       {
         "patterns": [
           {
-            "group": ["@/app/**"],
+            "group": [
+              "@/app/**"
+            ],
             "message": "Only the browser entrypoint can import the app layer."
           }
         ]
@@ -31,14 +43,19 @@
   },
   "overrides": [
     {
-      "files": ["src/api/**"],
+      "files": [
+        "src/api/**"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
             "patterns": [
               {
-                "group": ["@/features/**", "@/app/**"],
+                "group": [
+                  "@/features/**",
+                  "@/app/**"
+                ],
                 "message": "The API seam is below features and the app shell."
               }
             ]
@@ -47,7 +64,9 @@
       }
     },
     {
-      "files": ["src/api/search-stream.ts"],
+      "files": [
+        "src/api/search-stream.ts"
+      ],
       "rules": {
         "no-restricted-globals": [
           "error",
@@ -59,20 +78,28 @@
       }
     },
     {
-      "files": ["e2e/**"],
+      "files": [
+        "e2e/**"
+      ],
       "rules": {
         "no-restricted-globals": "off"
       }
     },
     {
-      "files": ["src/lib/**"],
+      "files": [
+        "src/lib/**"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
             "patterns": [
               {
-                "group": ["@/api/**", "@/features/**", "@/app/**"],
+                "group": [
+                  "@/api/**",
+                  "@/features/**",
+                  "@/app/**"
+                ],
                 "message": "lib holds dependency-free helpers only."
               }
             ]
@@ -81,7 +108,9 @@
       }
     },
     {
-      "files": ["src/features/**"],
+      "files": [
+        "src/features/**"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -89,13 +118,17 @@
             "paths": [
               {
                 "name": "@/api/client",
-                "allowImportNames": ["ApiError"],
+                "allowImportNames": [
+                  "ApiError"
+                ],
                 "message": "Features consume api/search hooks; only ApiError may come from the transport module."
               }
             ],
             "patterns": [
               {
-                "group": ["@/app/**"],
+                "group": [
+                  "@/app/**"
+                ],
                 "message": "Feature modules never import the app layer."
               }
             ]
@@ -104,26 +137,36 @@
       }
     },
     {
-      "files": ["src/main.tsx"],
+      "files": [
+        "src/main.tsx"
+      ],
       "rules": {
         "no-restricted-imports": "off"
       }
     },
     {
-      "files": ["src/app/**"],
+      "files": [
+        "src/app/**"
+      ],
       "rules": {
         "no-restricted-imports": "off"
       }
     },
     {
-      "files": ["src/routing/**"],
+      "files": [
+        "src/routing/**"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
             "patterns": [
               {
-                "group": ["@/app/**", "@/features/**", "@/ui/**"],
+                "group": [
+                  "@/app/**",
+                  "@/features/**",
+                  "@/ui/**"
+                ],
                 "message": "Routing modules are below the app, features, and UI layers."
               }
             ]
@@ -132,15 +175,68 @@
       }
     },
     {
-      "files": ["src/ui/**"],
+      "files": [
+        "src/ui/**"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
             "patterns": [
               {
-                "group": ["@/app/**", "@/features/**", "@/api/**"],
+                "group": [
+                  "@/app/**",
+                  "@/features/**",
+                  "@/api/**"
+                ],
                 "message": "ui foundation modules are product-agnostic and never import app, features, or API code."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/features/job-detail/**",
+        "src/features/saved/**"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/app/**",
+                  "@/features/catalogue/**",
+                  "@/features/search/**"
+                ],
+                "message": "Job detail and saved screens read the posting domain, not the search or catalogue features."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/features/jobs/**"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/app/**",
+                  "@/features/catalogue/**",
+                  "@/features/search/**",
+                  "@/features/job-detail/**",
+                  "@/features/saved/**"
+                ],
+                "message": "features/jobs holds shared posting parts and imports no other feature folder."
               }
             ]
           }

@@ -9,8 +9,9 @@ import {
 } from '@/routing/jobs-url'
 import {
   commitCanonicalHash,
-  currentReturnContext,
+  currentEntryId,
   ensureCurrentHistoryEntry,
+  jobsReturnContext,
   rememberCurrentJobsScroll,
   ROUTE_EVENT,
 } from '@/routing/navigation-context'
@@ -116,18 +117,32 @@ export function navigate(route: Route, mode: NavigationMode = 'push'): void {
   commitCanonicalHash(hash, { mode })
 }
 
+export function isPlainPrimaryClick(event: MouseEvent): boolean {
+  return (
+    event.button === 0 &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.shiftKey &&
+    !event.altKey
+  )
+}
+
 export function navigateFromJobsToJob(postingId: string): void {
   const canonicalJobsHash = formatRoute(parseHash(currentHash()))
   commitCanonicalHash(canonicalJobsHash, { mode: 'replace' })
   rememberCurrentJobsScroll(window.scrollY)
   commitCanonicalHash(formatRoute({ name: 'job', postingId }), {
     mode: 'push',
-    fromJobs: { hash: canonicalJobsHash, scrollY: window.scrollY },
+    fromJobs: {
+      hash: canonicalJobsHash,
+      scrollY: window.scrollY,
+      entryId: currentEntryId(),
+    },
   })
 }
 
 export function returnToJobs(): void {
-  if (currentReturnContext()) {
+  if (jobsReturnContext()) {
     window.history.back()
     return
   }

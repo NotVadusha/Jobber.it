@@ -10,6 +10,7 @@ import {
 import { BestMatchResults } from '@/features/search/BestMatchResults'
 import { BestMatchTrace } from '@/features/search/BestMatchTrace'
 import { isRankingPending } from '@/features/search/best-match-state'
+import { useJobsScrollRestoration } from '@/routing/navigation-context'
 import { PageState } from '@/ui/PageState'
 import { Skeleton } from '@/ui/Skeleton'
 
@@ -56,6 +57,7 @@ export function BestMatchView({
   const streaming = query.isFetching
   const pending = isRankingPending(pendingRequest, selection?.request ?? null)
   const cooldown = error?.code === 'RATE_LIMITED' ? retryAfterSeconds(error) : null
+  useJobsScrollRestoration(state?.snapshot != null)
 
   if (!selection) {
     return (

@@ -12,6 +12,6 @@ const SOURCE_LABELS: Record<PostingSource, string> = {
   linkedin: 'LinkedIn Jobs',
 }
 
-export function sourceLabel(source: PostingSource): string {
-  return SOURCE_LABELS[source]
+export function sourceLabel(source: string): string {
+  return SOURCE_LABELS[source as PostingSource] ?? source
 }

@@ -106,15 +106,16 @@ test('Why this ranked lists only delivered evidence and is absent when evidence 
   await expect(card2.getByText('Why this ranked')).toHaveCount(0)
 })
 
-test('no card exposes a save control, an internal job link, or an external source link', async ({ page }) => {
+test('a card exposes a canonical internal job link and a save control, and no external source link', async ({ page }) => {
   await installStream(page, (route) => fulfilStream(route, completedStream([posting(1, 0.9)])))
 
   await page.goto('/#/jobs?q=python+platform&view=best')
 
   const card = cards(page).first()
-  await expect(card.locator('a')).toHaveCount(0)
-  await expect(card.getByRole('button', { name: /save/i })).toHaveCount(0)
-  await expect(card.getByRole('link')).toHaveCount(0)
+  await expect(card.getByRole('link')).toHaveCount(1)
+  await expect(card.getByRole('link')).toHaveAttribute('href', '#/job/greenhouse%3A1')
+  await expect(card.getByRole('button', { name: /save/i })).toHaveCount(1)
+  await expect(card.locator('a[href^="http"]')).toHaveCount(0)
 })
 
 test('exhausting the snapshot offers All-postings text search, preserving query and hard filters', async ({ page }) => {

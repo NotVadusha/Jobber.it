@@ -35,3 +35,21 @@ export function formatPostingDate(
     label: `${postedAt ? 'Posted' : 'Discovered'} ${postingDateFormatter.format(date)}`,
   }
 }
+
+const absoluteDateFormatter = new Intl.DateTimeFormat('en-GB', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+})
+
+export function formatAbsoluteDate(
+  value: string | null | undefined,
+): PostingDatePresentation | null {
+  if (!value) return null
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.valueOf())) return null
+  return {
+    label: absoluteDateFormatter.format(parsed),
+    dateTime: parsed.toISOString(),
+  }
+}

@@ -10,6 +10,7 @@ import {
 } from '@/features/catalogue/catalogue-state'
 import { WelcomeDashboard } from '@/features/catalogue/WelcomeDashboard'
 import { navigate } from '@/routing/hash-router'
+import { useJobsScrollRestoration } from '@/routing/navigation-context'
 import {
   normalizeJobsState,
   type BrowseSort,
@@ -38,6 +39,7 @@ export function AllPostingsView({
   const request = useMemo(() => buildPostgresSearchRequest(state), [state])
   const postingsQuery = usePostgresSearchQuery(request)
   const pagination = postingsQuery.data?.meta.pagination
+  useJobsScrollRestoration(!postingsQuery.isPending && !postingsQuery.isPlaceholderData)
   const activeCount = activeCatalogueFilterCount(draftFilters)
   const welcomeState = normalizeJobsState({
     ...state,

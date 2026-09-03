@@ -3,7 +3,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Annotated, Any, Generic, Literal, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 
 from ..postings import BestMatchPosting, CatalogueSort, PostingFilters, SourceId
 from ..ranking import AppliedFilter, RankingStage, TraceNode, TraceStatus
@@ -88,6 +88,20 @@ class BestMatchRequest(BaseModel):
     @classmethod
     def trim_search_text(cls, value: object) -> object:
         return value.strip() if isinstance(value, str) else value
+
+
+class PostingLookupRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    ids: list[Annotated[str, StringConstraints(min_length=1, max_length=512)]] = Field(
+        min_length=1,
+        max_length=100,
+    )
+
+    @field_validator("ids")
+    @classmethod
+    def deduplicate_ids(cls, values: list[str]) -> list[str]:
+        return list(dict.fromkeys(values))
 
 
 class CatalogueQueryRequest(BaseModel):

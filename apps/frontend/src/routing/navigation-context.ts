@@ -7,7 +7,14 @@ export type JobberHistoryState = {
   fromJobs?: {
     hash: string
     scrollY: number
+    entryId: string
   }
+}
+
+export type JobsReturnContext = {
+  hash: string
+  scrollY: number
+  entryId: string
 }
 
 type BrowserHistoryState = Record<string, unknown> & {
@@ -18,7 +25,7 @@ export const ROUTE_EVENT = 'jobber:routechange'
 
 export type CommitHashOptions = {
   mode: 'push' | 'replace'
-  fromJobs?: { hash: string; scrollY: number }
+  fromJobs?: JobsReturnContext
 }
 
 let entryCounter = 0
@@ -46,7 +53,9 @@ function isValidFromJobs(value: unknown): value is NonNullable<JobberHistoryStat
     value.hash.startsWith('#/jobs') &&
     typeof value.scrollY === 'number' &&
     Number.isFinite(value.scrollY) &&
-    value.scrollY >= 0
+    value.scrollY >= 0 &&
+    typeof value.entryId === 'string' &&
+    value.entryId !== ''
   )
 }
 
@@ -108,6 +117,7 @@ export function commitCanonicalHash(
       ? {
           hash: requestedFromJobs.hash,
           scrollY: finiteScroll(requestedFromJobs.scrollY),
+          entryId: requestedFromJobs.entryId,
         }
       : undefined
   const jobber: JobberHistoryState = {
@@ -152,7 +162,7 @@ export function currentEntryId(): string {
   return ensureCurrentHistoryEntry().entryId
 }
 
-export function currentReturnContext(): JobberHistoryState['fromJobs'] | null {
+export function jobsReturnContext(): JobsReturnContext | null {
   return readJobberHistory().fromJobs ?? null
 }
 

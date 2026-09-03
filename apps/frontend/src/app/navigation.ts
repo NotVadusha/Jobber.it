@@ -2,14 +2,18 @@ import type { Route, RouteName } from '@/routing/hash-router'
 import type { FooterGroup, ShellNavItem } from '@/ui/shell/types'
 
 export function buildShellNavigation(
-  _current: Route,
-  _active: ReadonlySet<RouteName>,
+  current: Route,
+  active: ReadonlySet<RouteName>,
 ): readonly ShellNavItem[] {
-  return []
+  if (!active.has('saved')) return []
+  return [
+    { label: 'Saved', href: '#/saved', active: current.name === 'saved', placement: 'both' },
+  ]
 }
 
 export function buildFooterGroups(
-  _active: ReadonlySet<RouteName>,
+  active: ReadonlySet<RouteName>,
 ): readonly FooterGroup[] {
-  return []
+  if (!active.has('saved')) return []
+  return [{ label: 'Jobs', links: [{ label: 'Saved', href: '#/saved' }] }]
 }

@@ -107,9 +107,9 @@ test.describe('canonical jobs URL', () => {
 })
 
 test.describe('route matrix', () => {
-  test('a recognized but inactive job route falls back to jobs', async ({ page }) => {
+  test('an active job route stays on its own URL', async ({ page }) => {
     await page.goto('/#/job/greenhouse%3A123')
-    await expect(page).toHaveURL(/#\/jobs$/)
+    await expect(page).toHaveURL(/#\/job\/greenhouse%3A123$/)
   })
 
   test('a job id with an unrecognized source falls back to jobs', async ({ page }) => {
@@ -122,7 +122,7 @@ test.describe('route matrix', () => {
     await expect(page).toHaveURL(/#\/jobs$/)
   })
 
-  for (const name of ['saved', 'ranking', 'privacy', 'changelog', 'about']) {
+  for (const name of ['ranking', 'privacy', 'changelog', 'about']) {
     test(`the recognized-but-inactive static route "${name}" falls back to jobs`, async ({ page }) => {
       await page.goto(`/#/${name}`)
       await expect(page).toHaveURL(/#\/jobs$/)

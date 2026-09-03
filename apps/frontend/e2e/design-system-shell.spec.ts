@@ -305,15 +305,22 @@ test('mobile menu button appears only below the 768px breakpoint', async ({ page
   await expect(page.getByRole('navigation', { name: 'Primary' })).toBeVisible()
 })
 
-test('empty navigation and footer groups render no dead chrome', async ({ page }) => {
+test('navigation and footer groups contain only active routes', async ({ page }) => {
   await page.goto('/')
 
-  await expect(page.locator('header nav')).toHaveCount(0)
-  await expect(page.getByRole('button', { name: /menu/i })).toHaveCount(0)
+  await expect(page.getByRole('navigation', { name: 'Primary' }).getByRole('link')).toHaveText([
+    'Saved',
+  ])
   await expect(page.getByRole('button', { name: /Switch to (dark|light) theme/ })).toHaveCount(1)
 
-  await expect(page.locator('footer p')).toHaveCount(1)
+  await expect(page.locator('footer').getByRole('link', { name: 'Saved' })).toHaveAttribute(
+    'href',
+    '#/saved',
+  )
   await expect(page.getByText('aggregates public postings')).toBeVisible()
+  for (const name of ['Ranking', 'Privacy', 'Changelog', 'About']) {
+    await expect(page.locator('footer').getByRole('link', { name })).toHaveCount(0)
+  }
 })
 
 // Task 5: ThemeProvider moved from AppShell.tsx into main.tsx alongside the
