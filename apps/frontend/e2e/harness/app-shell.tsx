@@ -2,9 +2,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import '@/index.css'
-import { AppShell, type FooterGroup, type ShellNavItem } from '@/ui/AppShell'
 import { PageState } from '@/ui/PageState'
 import { Skeleton } from '@/ui/Skeleton'
+import { AppShell } from '@/ui/shell/AppShell'
+import type { FooterGroup, ShellNavItem } from '@/ui/shell/types'
 import { ThemeProvider } from '@/ui/theme'
 
 // Playwright-only mount point for AppShell (see e2e/design-system-shell.spec.ts).
