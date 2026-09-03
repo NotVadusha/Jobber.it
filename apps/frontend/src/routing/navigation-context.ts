@@ -5,13 +5,14 @@ import {
   normalizeScrollY,
   readJobberHistory,
   type JobberHistoryState,
+  type JobsReturnContext,
 } from '@/routing/history-state'
 
 export const ROUTE_EVENT = 'jobber:routechange'
 
 export type CommitHashOptions = {
   mode: 'push' | 'replace'
-  fromJobs?: { hash: string; scrollY: number }
+  fromJobs?: JobsReturnContext
 }
 
 export const ensureCurrentHistoryEntry = (): JobberHistoryState => {
@@ -38,6 +39,7 @@ export const commitCanonicalHash = (
     jobber.fromJobs = {
       hash: requestedFromJobs.hash,
       scrollY: normalizeScrollY(requestedFromJobs.scrollY),
+      entryId: requestedFromJobs.entryId,
     }
   }
   const state = mergeJobberHistory(jobber)
@@ -74,6 +76,6 @@ export const currentEntryId = (): string => {
   return ensureCurrentHistoryEntry().entryId
 }
 
-export const currentReturnContext = (): JobberHistoryState['fromJobs'] | null => {
+export const jobsReturnContext = (): JobsReturnContext | null => {
   return readJobberHistory().fromJobs ?? null
 }

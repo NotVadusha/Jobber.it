@@ -21,6 +21,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/postings/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Posting Lookup */
+        post: operations["posting_lookup_api_postings_lookup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/postings/query": {
         parameters: {
             query?: never;
@@ -32,6 +49,23 @@ export interface paths {
         put?: never;
         /** Query Postings */
         post: operations["query_postings_api_postings_query_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/postings/{posting_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Posting */
+        get: operations["posting_api_postings__posting_id__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -228,6 +262,50 @@ export interface components {
          * @enum {string}
          */
         PostedWithin: "24h" | "7d" | "30d";
+        /** PostingDetail */
+        PostingDetail: {
+            /** Company */
+            company: string;
+            /** Delisted At */
+            delisted_at?: string | null;
+            /** Description */
+            description?: string | null;
+            /** First Seen At */
+            first_seen_at?: string | null;
+            /** Id */
+            id: string;
+            /**
+             * Last Seen At
+             * Format: date-time
+             */
+            last_seen_at: string;
+            /** Location */
+            location?: string | null;
+            /** Posted At */
+            posted_at?: string | null;
+            remote_policy?: components["schemas"]["RemotePolicy"] | null;
+            /** Requirements */
+            requirements?: string | null;
+            /** Responsibilities */
+            responsibilities?: string | null;
+            /** Salary Max */
+            salary_max?: number | null;
+            /** Salary Min */
+            salary_min?: number | null;
+            seniority?: components["schemas"]["PostingSeniority"] | null;
+            source: components["schemas"]["SourceId"];
+            /** Stack */
+            stack?: string[];
+            /** Title */
+            title: string;
+            /**
+             * Url
+             * Format: uri
+             */
+            url: string;
+            /** Years Required */
+            years_required?: number | null;
+        };
         /** PostingFilters */
         PostingFilters: {
             /** Experience Years */
@@ -246,6 +324,11 @@ export interface components {
             seniority?: components["schemas"]["SeniorityFilter"][];
             /** Source */
             source?: components["schemas"]["SourceId"][];
+        };
+        /** PostingLookupRequest */
+        PostingLookupRequest: {
+            /** Ids */
+            ids: string[];
         };
         /**
          * PostingSection
@@ -310,6 +393,39 @@ export interface components {
          * @enum {string}
          */
         RemotePolicy: "remote" | "hybrid" | "onsite" | "unknown";
+        /** ResolvedPosting */
+        ResolvedPosting: {
+            /** Company */
+            company: string;
+            /** Delisted At */
+            delisted_at?: string | null;
+            /** First Seen At */
+            first_seen_at?: string | null;
+            /** Id */
+            id: string;
+            /** Location */
+            location?: string | null;
+            /** Posted At */
+            posted_at?: string | null;
+            remote_policy?: components["schemas"]["RemotePolicy"] | null;
+            /** Salary Max */
+            salary_max?: number | null;
+            /** Salary Min */
+            salary_min?: number | null;
+            seniority?: components["schemas"]["PostingSeniority"] | null;
+            source: components["schemas"]["SourceId"];
+            /** Stack */
+            stack?: string[];
+            /** Title */
+            title: string;
+            /**
+             * Url
+             * Format: uri
+             */
+            url: string;
+            /** Years Required */
+            years_required?: number | null;
+        };
         /** ResponseMeta */
         ResponseMeta: {
             pagination?: components["schemas"]["PaginationMeta"] | null;
@@ -411,10 +527,21 @@ export interface components {
             data: components["schemas"]["MetaData"];
             meta: components["schemas"]["ResponseMeta"];
         };
+        /** SuccessResponse[PostingDetail] */
+        SuccessResponse_PostingDetail_: {
+            data: components["schemas"]["PostingDetail"];
+            meta: components["schemas"]["ResponseMeta"];
+        };
         /** SuccessResponse[list[PostingSummary]] */
         SuccessResponse_list_PostingSummary__: {
             /** Data */
             data: components["schemas"]["PostingSummary"][];
+            meta: components["schemas"]["ResponseMeta"];
+        };
+        /** SuccessResponse[list[ResolvedPosting]] */
+        SuccessResponse_list_ResolvedPosting__: {
+            /** Data */
+            data: components["schemas"]["ResolvedPosting"][];
             meta: components["schemas"]["ResponseMeta"];
         };
         /** TraceNode */
@@ -480,6 +607,57 @@ export interface operations {
             };
         };
     };
+    posting_lookup_api_postings_lookup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PostingLookupRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuccessResponse_list_ResolvedPosting__"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     query_postings_api_postings_query_post: {
         parameters: {
             query?: never;
@@ -500,6 +678,64 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SuccessResponse_list_PostingSummary__"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    posting_api_postings__posting_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                posting_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuccessResponse_PostingDetail_"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Unprocessable Entity */

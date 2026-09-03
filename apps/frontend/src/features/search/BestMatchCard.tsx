@@ -2,13 +2,12 @@ import type { ReactElement } from 'react'
 
 import type { BestMatchData } from '@/api/search'
 import { HighlightedText } from '@/features/jobs/HighlightedText'
+import { JobLink } from '@/features/jobs/JobLink'
 import { PostingFacts } from '@/features/jobs/PostingFacts'
 import { PostingStack } from '@/features/jobs/PostingStack'
-import {
-  evidenceTerms,
-  hasEvidence,
-  matchPercent,
-} from '@/features/search/best-match-state'
+import { RankingEvidence } from '@/features/jobs/RankingEvidence'
+import { evidenceTerms, matchPercent } from '@/features/jobs/ranking-score'
+import { SaveJobButton } from '@/features/saved/SaveJobButton'
 
 type BestMatchResult = BestMatchData['results'][number]
 
@@ -38,7 +37,9 @@ export const BestMatchCard = ({
             id={titleId}
             className="min-w-0 text-base font-semibold leading-snug text-primary sm:text-lg"
           >
-            <HighlightedText text={result.title} terms={terms} />
+            <JobLink postingId={result.id}>
+              <HighlightedText text={result.title} terms={terms} />
+            </JobLink>
           </h3>
           <p className="flex shrink-0 items-center gap-2">
             <span className="h-[3px] w-14 bg-surface-strong" aria-hidden="true">
@@ -48,42 +49,20 @@ export const BestMatchCard = ({
               {percent}% match
             </span>
           </p>
+          <SaveJobButton
+            target={{
+              id: result.id,
+              title: result.title,
+              company: result.company,
+              source: result.source,
+            }}
+          />
         </div>
 
         <PostingFacts posting={result} terms={terms} />
         <PostingStack stack={result.stack ?? []} terms={terms} />
 
-        {hasEvidence(result) && (
-          <details className="mt-3 rounded-sm border border-subtle bg-surface-raised px-3 py-2">
-            <summary className="cursor-pointer font-mono text-[11px] uppercase tracking-[0.12em] text-secondary">
-              Why this ranked
-            </summary>
-            <dl className="mt-2 flex flex-col gap-2 text-xs text-tertiary">
-              {(result.evidence!.literalHits?.length ?? 0) > 0 && (
-                <div className="flex flex-wrap items-baseline gap-2">
-                  <dt className="font-mono text-[10px] uppercase tracking-[0.12em]">
-                    Literal matches
-                  </dt>
-                  {result.evidence!.literalHits!.map((hit) => (
-                    <dd key={hit.term} className="font-mono text-secondary">
-                      {hit.term} ({hit.fields.join(', ')})
-                    </dd>
-                  ))}
-                </div>
-              )}
-              {(result.evidence!.retrievedSections?.length ?? 0) > 0 && (
-                <div className="flex flex-wrap items-baseline gap-2">
-                  <dt className="font-mono text-[10px] uppercase tracking-[0.12em]">
-                    Retrieved sections
-                  </dt>
-                  <dd className="font-mono text-secondary">
-                    {result.evidence!.retrievedSections!.join(', ')}
-                  </dd>
-                </div>
-              )}
-            </dl>
-          </details>
-        )}
+        <RankingEvidence result={result} summary="Why this ranked" />
       </article>
     </li>
   )

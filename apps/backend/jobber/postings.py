@@ -118,6 +118,17 @@ class PostingSummary(BaseModel):
     stack: list[str] = Field(default_factory=list)
 
 
+class ResolvedPosting(PostingSummary):
+    delisted_at: datetime | None = None
+
+
+class PostingDetail(ResolvedPosting):
+    last_seen_at: datetime
+    description: str | None = None
+    requirements: str | None = None
+    responsibilities: str | None = None
+
+
 class LiteralHit(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

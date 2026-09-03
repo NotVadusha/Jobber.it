@@ -12,6 +12,7 @@ import { BestMatchResults } from '@/features/search/BestMatchResults'
 import { BestMatchTrace } from '@/features/search/BestMatchTrace'
 import { Cooldown } from '@/features/search/Cooldown'
 import { isRankingPending } from '@/features/search/best-match-state'
+import { useJobsScrollRestoration } from '@/routing/scroll-restoration'
 import { PageState } from '@/ui/PageState'
 import { Skeleton } from '@/ui/Skeleton'
 
@@ -43,6 +44,7 @@ export const BestMatchView = ({
   const error = streamFailure instanceof ApiError ? streamFailure : null
   const pending = isRankingPending(pendingRequest, selection?.request ?? null)
   const cooldown = error?.code === 'RATE_LIMITED' ? retryAfterSeconds(error) : null
+  useJobsScrollRestoration(state?.snapshot != null)
   // Rendered from the first paint, all stages pending, so the rail cannot
   // appear underneath the Stop button and shift it out from under a click.
   const traced = state ?? (streaming ? idleStream() : null)

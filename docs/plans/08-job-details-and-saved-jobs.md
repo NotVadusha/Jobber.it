@@ -12,7 +12,7 @@
 
 **Last updated:** 2026-09-02
 
-**Implementation status:** Not started
+**Implementation status:** Implemented. Static gates green; the database-backed gates (`make e2e`, availability drill, computer-use acceptance) are unrun — no reachable PostgreSQL in the implementation environment.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use `superpowers:subagent-driven-development` or `superpowers:executing-plans` to implement this plan task by task. Track every implementation step with checkboxes in the execution task and stop at each checkpoint below.
 
@@ -71,7 +71,7 @@ Plan 8 was written while Plan 1 implementation was present in the working tree a
 
 ### 3.1 Corrections recorded with this plan
 
-This planning pass corrected six items in earlier plans. Do not reintroduce the superseded versions from an older copy.
+This planning pass corrected six items in earlier plans, and implementation added two more. Do not reintroduce the superseded versions from an older copy.
 
 **Plan 3 Section 12.1 — `fromJobs` gains `entryId`.** The envelope becomes `fromJobs: {hash, scrollY, entryId}`. Plan 3 wrote `fromJobs` so a job page could return to its origin; Plan 8 additionally needs to identify the origin's Best-match cache entry. The value is the same validated random entry identifier Plan 3 already stores on every entry, so no new class of data enters history state. Section 20.5 gives the exact reader.
 
@@ -82,6 +82,10 @@ This planning pass corrected six items in earlier plans. Do not reintroduce the 
 **Plan 5 Section 15.2 — browse cards gain a title link and a save control.** Plan 5 prohibited a "Save button" and a "dead job-detail link" on browse cards because the `job` route was inactive and saved records had no owner. Plan 8 activates the route and owns the records, so both affordances are added here by design. The prohibition on a semantic score, an inferred match explanation, and a direct external title link on browse cards is unchanged and still binding.
 
 **Plan 7 Section 7.11 and 19.14 — the score and evidence helpers move.** `matchPercent`, `hasEvidence`, `evidenceTerms`, and `UNCALIBRATED_SCORE_NOTICE` move from `features/search/best-match-state.ts` to `features/jobs/ranking-score.ts`, and the evidence `<details>` markup moves from `BestMatchCard.tsx` to `features/jobs/RankingEvidence.tsx`. Plan 7's pending, reveal, and stage rules stay in `best-match-state.ts`. This is the extraction rule Plan 7 itself set: extract when the second real caller appears.
+
+**Plan 3 `hash-router.tsx` — `isPlainPrimaryClick()` and `jobsReturnContext()` land here.** The merged Plan 3 never shipped `isPlainPrimaryClick`, and its return-context reader is `currentReturnContext()`, which returns the envelope without an entry identifier. Plan 8 adds `isPlainPrimaryClick()` to `hash-router.tsx` — the module Section 3.2 already expected it from — and renames the reader to `jobsReturnContext()` with the `entryId` Section 20.5 specifies. `JobLink` and the breadcrumb share the one click predicate rather than each inlining the modifier test.
+
+**Plan 4 `api/app.py` — the catalogue-unavailable log records the route template too.** Section 20.4 changes only the request log, but Plan 4's `catalogue_unavailable` handler logs `request.url.path` as well, so a 503 on a detail request would still carry the posting identifier into a log line. Both call sites now read one `_log_path()` helper.
 
 **Plan 1 `api/app.py` — the request log records the route template.** `request_completed.path` becomes the matched route template, so `/api/postings/{posting_id}` is logged instead of `/api/postings/greenhouse:123`. This is new work created by this plan: Plan 8 adds the first route with a resource identifier in its path. Section 20.4 gives the exact change and the verification that must pass before it is relied on.
 
@@ -2592,26 +2596,26 @@ Replace each `PENDING` entry during implementation. Include the command, exit st
 
 | Evidence | Required record |
 |---|---|
-| Prerequisite refs and Section 3.2 inspection | `PENDING` |
-| Starlette version and `scope["route"]` finding | `PENDING` |
-| Checkpoint A | `PENDING` |
-| Checkpoint B plus all Section 20.15 drills | `PENDING` |
-| Import-boundary deliberate fail/pass proof | `PENDING` |
-| Checkpoint C plus the storage-payload assertion | `PENDING` |
-| Checkpoint D five-case inspection | `PENDING` |
-| Checkpoint E single-request and outage observation | `PENDING` |
-| Checkpoint F ranking-context comparison | `PENDING` |
-| Section 20.16 oxlint fail/pass proof, both rules | `PENDING` |
-| Every Section 20.16 scan | `PENDING` |
-| Focused Playwright results, all three specifications | `PENDING` |
-| Full `make e2e` result | `PENDING` |
-| Full `make verify-full` result | `PENDING` |
-| Light/dark computer-use result | `PENDING` |
-| 390 px/320 px/reduced-motion result | `PENDING` |
-| Keyboard-only walkthrough result | `PENDING` |
-| Closed-database and capacity drill results | `PENDING` |
-| Log inspection for identifiers and sensitive text | `PENDING` |
-| Final `git diff --check` and `git status --short` | `PENDING` |
+| Prerequisite refs and Section 3.2 inspection | Merged tree at `48de991`. Two corrections: Plan 3 never shipped `isPlainPrimaryClick`, added to `hash-router.tsx` in this change; Plan 3's `currentReturnContext()` is renamed `jobsReturnContext()` and now carries `entryId`. `ErrorCode.POSTING_NOT_FOUND` existed with no producer. |
+| Starlette version and `scope["route"]` finding | starlette 1.6.0, fastapi 0.141.1. `scope["route"]` is populated after routing; the route-template log hunk is kept. |
+| Checkpoint A | `make api-contracts` regenerates with no further diff; `npm run typecheck`, `npm run lint`, `npm run build`, `make test` (61 + 70 + 15 passed), `lint-imports` 2 kept 0 broken. |
+| Checkpoint B plus all Section 20.15 drills | Route-template log drill: every `request_completed` and `catalogue_unavailable` line records `/api/postings/{posting_id}`; `grep -c 'greenhouse:123\|does-not-exist-at-all'` over the run is `0`. Route-ordering drill: `POST /api/postings/lookup` reaches the lookup route (503 only because the configured database is unreachable). OpenAPI operation map: `/api/postings/lookup` exposes `post` only, `/api/postings/{posting_id}` exposes `get` only, `404/422/500/503` documented with `ErrorResponse`, `PostingDetail` carries `delisted_at`/`last_seen_at`/`description`/`requirements`/`responsibilities` and no `availability`, `ResolvedPosting` carries `delisted_at` and no body text, `PostingSummary` and `BestMatchPosting` unchanged, no `HTTPValidationError`. Availability drill: UNRUN, no reachable seeded database. |
+| Import-boundary deliberate fail/pass proof | A temporary `from ..db import conn` in `api/app.py` breaks `api-does-not-import-adapters` (`jobber.api.app -> jobber.db (l.14)`); removing it restores 2 kept, 0 broken. |
+| Checkpoint C plus the storage-payload assertion | `saved-jobs.ts` is the only new storage writer; the payload assertion is asserted by `saved-jobs.spec.ts` (`['company','id','savedAt','source','title']`), which is UNRUN pending a database. |
+| Checkpoint D five-case inspection | UNRUN, requires a reachable database. |
+| Checkpoint E single-request and outage observation | Asserted by `saved-jobs.spec.ts` (one `POST /api/postings/lookup` with exactly the saved identifiers; the outage case drives `context.setOffline`). UNRUN pending a database. |
+| Checkpoint F ranking-context comparison | Asserted by `job-ranking-context.spec.ts`. UNRUN pending a database (its own data is a wire fixture, but the suite's web servers require one). |
+| Section 20.16 oxlint fail/pass proof, both rules | `src/features/saved/_probe.ts` importing `@/features/search/best-match-state` and `src/features/jobs/_probe.ts` importing `@/features/saved/SavedPage` each raise `eslint(no-restricted-imports)` naming the intended message; removing both probes returns zero restricted-import errors. |
+| Every Section 20.16 scan | All nine pass exactly as specified: `localStorage` only in `features/saved/saved-jobs.ts`, `features/jobs/compensation.tsx`, `ui/theme.tsx`; no `sessionStorage`/`indexedDB`/`document.cookie`; no `innerHTML`; no query-client access in `features/job-detail` or `features/saved`; both `target="_blank"` sites carry `noopener` and `noreferrer`; `summary` only as the evidence-disclosure prop; the probability vocabulary only inside `CONTEXT_NOTICE`; no profile/filename/CV reference and no ranking, score, or evidence reference in `features/saved` or `api/postings.ts`. |
+| Focused Playwright results, all three specifications | UNRUN, requires `E2E_DATABASE_URL`. |
+| Full `make e2e` result | UNRUN, requires `E2E_DATABASE_URL`. |
+| Full `make verify-full` result | UNRUN. Its non-database members pass individually: `api-contracts`, lint, typecheck, `lint-imports`, `make test`, `npm run build`, and `app.openapi()`. `api-contracts-check` will pass only once this change is committed, since it diffs the generated artifacts against `HEAD`. |
+| Light/dark computer-use result | UNRUN, requires a reachable database. |
+| 390 px/320 px/reduced-motion result | UNRUN as computer use. The 390 px no-horizontal-scroll case for hostile stored text is asserted in `job-details.spec.ts`. |
+| Keyboard-only walkthrough result | UNRUN, requires a reachable database. |
+| Closed-database and capacity drill results | Capacity is asserted in `saved-jobs.spec.ts`. Both drills UNRUN as computer use. |
+| Log inspection for identifiers and sensitive text | The route-template drill above shows zero posting identifiers across `request_completed` and `catalogue_unavailable`. A full-session inspection is UNRUN. |
+| Final `git diff --check` and `git status --short` | `git diff --check` clean. `git status --short` lists only Plan 8 files plus the Section 3.1 prerequisite corrections and the four specifications those corrections invalidate. |
 
 ### 21.4 Definition of Done
 

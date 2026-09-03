@@ -2,10 +2,13 @@ export type JobberHistoryState = {
   version: 1
   entryId: string
   jobsScrollY?: number
-  fromJobs?: {
-    hash: string
-    scrollY: number
-  }
+  fromJobs?: JobsReturnContext
+}
+
+export type JobsReturnContext = {
+  hash: string
+  scrollY: number
+  entryId: string
 }
 
 type BrowserHistoryState = Record<string, unknown> & {
@@ -43,7 +46,9 @@ const isValidFromJobs = (value: unknown): value is NonNullable<JobberHistoryStat
     isRecord(value) &&
     typeof value.hash === 'string' &&
     value.hash.startsWith('#/jobs') &&
-    isValidScrollY(value.scrollY)
+    isValidScrollY(value.scrollY) &&
+    typeof value.entryId === 'string' &&
+    value.entryId !== ''
   )
 }
 
