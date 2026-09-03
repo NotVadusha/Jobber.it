@@ -6,6 +6,17 @@
     "react/only-export-components": ["warn", { "allowConstantExport": true }],
     "import/no-cycle": "error",
     "import/no-relative-parent-imports": "error",
+    "no-restricted-globals": [
+      "error",
+      {
+        "name": "fetch",
+        "message": "Only src/api/search-stream.ts may use fetch. Everything else goes through the shared Axios instance."
+      },
+      {
+        "name": "EventSource",
+        "message": "The Best-match stream is a POST with a body; EventSource cannot send one."
+      }
+    ],
     "no-restricted-imports": [
       "error",
       {
@@ -33,6 +44,24 @@
             ]
           }
         ]
+      }
+    },
+    {
+      "files": ["src/api/search-stream.ts"],
+      "rules": {
+        "no-restricted-globals": [
+          "error",
+          {
+            "name": "EventSource",
+            "message": "The Best-match stream is a POST with a body; EventSource cannot send one."
+          }
+        ]
+      }
+    },
+    {
+      "files": ["e2e/**"],
+      "rules": {
+        "no-restricted-globals": "off"
       }
     },
     {
