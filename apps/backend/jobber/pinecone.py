@@ -9,6 +9,9 @@ from typing import Iterable
 from pinecone import Pinecone, RateLimitError
 
 from . import config
+from .logging import get_logger
+
+logger = get_logger(service="backend", module=__name__)
 
 DENSE_MODEL = "multilingual-e5-large"
 SPARSE_MODEL = "pinecone-sparse-english-v0"
@@ -85,7 +88,11 @@ def _upsert_with_backoff(index, records: list[dict]) -> None:
             return
         except RateLimitError as e:
             wait = e.retry_after or min(wait * 2, RATE_LIMIT_MAX_WAIT)
-            print(f"  rate limited, waiting {wait:.0f}s", flush=True)
+            logger.warning(
+                "pinecone_rate_limited",
+                "Pinecone rate limited an upsert; backing off",
+                wait_seconds=round(wait, 1),
+            )
             time.sleep(wait)
 
 
@@ -101,7 +108,13 @@ def upsert(records: Iterable[dict]) -> int:
         for index in (dense, sparse):
             _upsert_with_backoff(index, batch)
         total += len(batch)
-        print(f"    batch {total}/{len(records)} chunks (paced {pace:.1f}s)", flush=True)
+        logger.info(
+            "pinecone_batch_upserted",
+            "Chunk batch upserted",
+            written=total,
+            total=len(records),
+            paced_seconds=round(pace, 1),
+        )
         
     return total
 

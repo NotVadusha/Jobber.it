@@ -2981,3 +2981,101 @@ The implementation agent must not make these substitutions:
 - Do not modify generated files by hand.
 - Do not log request bodies, query text, profile text, or exception messages from providers.
 - Do not continue after a checkpoint fails.
+
+## 23. Implementation Evidence
+
+Implemented 2026-09-02 against the repository state recorded in Section 3.
+
+### 23.1 Approved deviations from the blueprint
+
+Each was raised before the code was written and approved by the plan owner.
+
+1. **`SeniorityFilter` keeps `principal`.** Section 8.1 specifies `intern|junior|mid|senior|lead`,
+   but the shipped seniority control already offered `principal`, and Plan 1 must not change the
+   visible surface. `PostingFilters.seniority` accepts six values and its `max_length` is 6. The
+   master plan's Section 2.4 filter vocabulary should be reconciled before Plan 5.
+2. **MCP owns its own card and builds `PostingFilters` directly.** Task 4 removes `Filters`,
+   `card` and `HIT_FIELDS` from `pipeline.py`, but `jobber_mcp.server` called all three and
+   Section 22.22 forbids converting MCP to the browser contracts. `server.py` now defines a local
+   `CARD_FIELDS`/`_card()` and constructs `PostingFilters(experience_years=max_years, ...)`. Its
+   public tool signature is unchanged; an out-of-vocabulary filter value now raises a tool error
+   instead of silently matching nothing.
+3. **`SearchTrace` takes a `tookMs` prop.** `took_ms` moved out of the response body into
+   `meta.took_ms`, so it can no longer arrive through `data`. `SearchTraceProps` gained
+   `tookMs: number | null | undefined`; `SearchPage` reads `bestMatchQuery.data?.meta.tookMs`.
+   The rendered string is unchanged.
+
+### 23.2 Required additions the blueprint implied but did not list
+
+- **`@types/node`** as a dev dependency. The blueprint's own `vite.config.ts` and
+  `playwright.config.ts` reference `node:url` and `process`.
+- **`typescript` pinned to `^5`.** npm resolves `typescript` to 7.x by default, which
+  `openapi-typescript@7` rejects as a peer dependency.
+- **`allow_indirect_imports = true`** on the `api-does-not-import-adapters` contract. Section 7.2
+  forbids the API layer from importing an adapter *itself*; import-linter's default `forbidden`
+  contract also rejects the legitimate chain `api.app -> ranking -> pipeline -> pinecone`.
+- **`Label` is exported from `SearchForm.tsx`** and imported by `SearchPage` and `SearchTrace`.
+  Section 22.13 requires `Label` to live in `SearchForm.tsx`; three modules render it.
+- **The Task 4 transitional router step was collapsed into Task 5.** `test_router.py` asserted
+  against `router.Filters` and `router.clauses`, both of which Task 4 removes, so a delegating
+  router could not have been left green for one commit. Checkpoint B's required end state is
+  unchanged: `router.py` and `test_router.py` are deleted.
+
+### 23.3 Checkpoint results
+
+| Checkpoint | Result |
+|---|---|
+| A — Tools only | typecheck, Chromium smoke, `make lint`, `make build` pass. |
+| B — Backend seam | 61 backend + 70 cron + 15 MCP tests pass; stale-import scan clean; `jobber/pinecone.py` exists and `jobber/index.py` does not; both import contracts kept. |
+| C — Generated contract | `make api-contracts` run twice is byte-identical (sha256 verified); generated names are `SuccessResponse_MetaData_` and `SuccessResponse_BestMatchData_` as specified. |
+| D — Typed frontend | No `.jsx` under `src`; typecheck, lint, 10 Playwright tests and the production build pass. |
+| E — Guardrails | `make check`, `make verify`, `make verify-full` exit 0. |
+| F — Final proof | Live failure-path smoke passed; stale-path scan clean; see 23.5. |
+
+The backend suite moved from 63 to 61 tests because Task 5 deletes `test_router.py`'s two
+direct-function tests. No other suite changed.
+
+### 23.4 Boundary-check fail/pass proof
+
+Each rule was proven to fail on a deliberate violation and pass once it was removed.
+
+| Rule | Violation introduced | Observed failure |
+|---|---|---|
+| import-linter `api-does-not-import-adapters` | `from .. import pinecone` in `api/app.py` | `jobber.api.app -> jobber.pinecone (l.12)` |
+| oxlint `no-restricted-imports` (lib) | `@/api/client` in `lib/format.ts` | `'@/api/client' import is restricted from being used by a pattern` |
+| oxlint `no-restricted-imports` (features) | `@/app/App` in `SearchPage.tsx` | `'@/app/App' import is restricted from being used by a pattern` |
+| oxlint `import/no-cycle` | the same import | `Dependency cycle detected` |
+| oxlint `import/no-relative-parent-imports` | `../features/cv/read-profile` in `api/search.ts` | `Relative imports from parent directories are not allowed` |
+
+### 23.5 Live verification and its limits
+
+The PostgreSQL credentials in `.env` are rejected by the remote host
+(`FATAL: password authentication failed`), so **the live success path was not exercised**. No
+Pinecone or LLM call was made. A live ranked search remains outstanding, together with the
+Section 17 computer-use checklist.
+
+The live *failure* path was verified end to end against the real backend and the real Vite proxy:
+
+- Raw wire, snake_case and correctly enveloped: `{"error":{"code":"INTERNAL_ERROR","message":"The
+  server could not complete the request.","details":null},"meta":{"request_id":"...",
+  "pagination":null,"took_ms":null}}`.
+- The `X-Request-ID` header equals `meta.request_id`.
+- Rendered alert: `The server could not complete the request.reference be977a1edc3e42f59d4e2db0db820100`
+  — the request id of the final attempt, asserted to contain no `psycopg`, `PoolTimeout`,
+  `password`, `postgres`, host or `Traceback` substring.
+- Backend record: `{"level":"ERROR","service":"backend","module":"jobber.api.app",
+  "event":"request_failed","request_id":"...","error_type":"PoolTimeout"}` — no body, query or
+  profile text.
+- The rendered page was inspected in a real Chromium tab; markup, controls, examples and the
+  `principal` seniority option match the pre-migration surface.
+
+### 23.6 Known issue: third-party library log records
+
+`configure_logging` installs the JSON formatter on the root logger, so library records reach
+stdout with `event: "library_log"` and their own unfiltered message. Observed in practice, a
+`psycopg.pool` record carried the database host, port and username. Section 6.7 admits library
+records by design — the formatter's `library_log` fallback exists for them — and this is not a
+regression, since the same text reached stdout unformatted before this plan. It is still
+infrastructure detail in application logs, and should be closed by a follow-up: raise the level
+for third-party loggers, or attach the JSON handler to the `jobber`/`jobber_cron` logger trees
+only.

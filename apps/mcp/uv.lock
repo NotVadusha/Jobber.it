@@ -594,6 +594,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "alembic", specifier = ">=1.13" },
+    { name = "import-linter", specifier = ">=2.14" },
     { name = "pytest", specifier = ">=8" },
     { name = "sqlalchemy", specifier = ">=2.0" },
 ]

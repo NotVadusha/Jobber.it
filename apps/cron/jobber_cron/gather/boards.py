@@ -7,6 +7,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 
 from jobber.http import Fetcher
+from jobber.logging import get_logger
 
 from .. import boot_no_llm
 
@@ -18,6 +19,8 @@ PROBE = {
     "ashby": "https://api.ashbyhq.com/posting-api/job-board/{}",
 }
 WORKERS = 12
+
+logger = get_logger(service="cron", module=__name__)
 
 
 def known() -> dict[str, list[str]]:
@@ -44,7 +47,12 @@ def discover(candidates: list[str], write: bool = True) -> dict[str, list[str]]:
     current = known()
     seen = {ats: set(slugs) for ats, slugs in current.items() if ats in PROBE}
     work = [(ats, s) for s in candidates for ats in PROBE if s not in seen.get(ats, ())]
-    print(f"probing {len(work)} slug/ATS pairs ({len(candidates)} candidates)")
+    logger.info(
+        "board_probe_started",
+        "Probing candidate boards",
+        pairs=len(work),
+        candidates=len(candidates),
+    )
 
     def run(job: tuple[str, str]) -> tuple[str, str, int]:
         ats, slug = job
@@ -55,14 +63,25 @@ def discover(candidates: list[str], write: bool = True) -> dict[str, list[str]]:
         hits = [r for r in pool.map(run, work) if r[2] > 0]
 
     for ats, slug, n in sorted(hits, key=lambda r: -r[2]):
-        print(f"  {ats:11} {slug:30} {n:5} postings")
+        logger.info(
+            "board_discovered",
+            "Board answered with postings",
+            ats=ats,
+            slug=slug,
+            postings=n,
+        )
         seen.setdefault(ats, set()).add(slug)
 
     merged = {**current, **{ats: sorted(slugs) for ats, slugs in seen.items()}}
-    print(f"{len(hits)} new boards -> {sum(len(v) for v in merged.values())} total")
+    logger.info(
+        "board_probe_completed",
+        "Board discovery completed",
+        new_boards=len(hits),
+        total_boards=sum(len(v) for v in merged.values()),
+    )
     if write and hits:
         BOARDS.write_text(json.dumps(merged, indent=2, sort_keys=True) + "\n", "utf-8")
-        print(f"wrote {BOARDS}")
+        logger.info("boards_written", "Board registry written", path=str(BOARDS))
     return merged
 
 

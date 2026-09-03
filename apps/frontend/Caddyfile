@@ -1,5 +1,5 @@
-# Keeps /api same-origin in production, exactly as vite.config.js's dev proxy does
-# — so App.jsx goes on fetching bare `/api/search` and the backend needs no CORS.
+# Keeps /api same-origin in production, exactly as vite.config.ts's dev proxy does
+# — so the axios instance keeps its bare `/api` baseURL and the backend needs no CORS.
 #
 # PORT is injected by Railway. API_URL is the backend over private networking,
 # e.g. http://api.railway.internal:8080 — a runtime variable, not baked into the

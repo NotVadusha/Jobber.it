@@ -1,31 +1,46 @@
 from __future__ import annotations
 
 from jobber import db
-from jobber import index as index_mod
+from jobber import pinecone
+from jobber.logging import get_logger
 
 from .. import boot_no_llm, noargs
 
 CHECKPOINT = 100
 
+logger = get_logger(service="cron", module=__name__)
+
 
 def index() -> int:
     postings = db.pending_index()
     if not postings:
-        print("nothing to index")
+        logger.info("index_skipped", "No postings are pending indexing")
         return 0
-    done = index_mod.existing_ids()
+    done = pinecone.existing_ids()
     written = 0
     for i in range(0, len(postings), CHECKPOINT):
         batch = postings[i : i + CHECKPOINT]
-        records = [chunk for posting in batch for chunk in index_mod.chunks(posting)
+        records = [chunk for posting in batch for chunk in pinecone.chunks(posting)
                    if chunk["_id"] not in done]
         if records:
-            written += index_mod.upsert(records)
+            written += pinecone.upsert(records)
         db.mark_indexed([p["id"] for p in batch])
-        print(f"  {min(i + CHECKPOINT, len(postings))}/{len(postings)} indexed "
-              f"({len(records)} new chunks)", flush=True)
-    print(f"{written} chunks from {len(postings)} postings -> "
-          f"{index_mod.DENSE_INDEX} + {index_mod.SPARSE_INDEX} (ns {index_mod.NAMESPACE})")
+        logger.info(
+            "index_checkpoint",
+            "Indexing checkpoint reached",
+            indexed=min(i + CHECKPOINT, len(postings)),
+            total=len(postings),
+            new_chunks=len(records),
+        )
+    logger.info(
+        "index_completed",
+        "Indexing completed",
+        chunks=written,
+        postings=len(postings),
+        dense_index=pinecone.DENSE_INDEX,
+        sparse_index=pinecone.SPARSE_INDEX,
+        namespace=pinecone.NAMESPACE,
+    )
     return 0
 
 
