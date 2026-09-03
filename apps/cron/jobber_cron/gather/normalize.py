@@ -3,18 +3,20 @@ from __future__ import annotations
 import difflib
 import json
 import re
-import sys
 from concurrent.futures import ThreadPoolExecutor
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from jobber import db, providers
+from jobber.logging import get_logger
 
 from .. import boot, noargs
 
 CHECKPOINT = 100
 WORKERS = 8
+
+logger = get_logger(service="cron", module=__name__)
 
 
 class Extracted(BaseModel):
@@ -163,7 +165,7 @@ def merge(posting: dict, extracted: dict) -> dict:
 def normalize() -> int:
     postings = db.pending_normalize()
     if not postings:
-        print("nothing to normalize")
+        logger.info("normalize_skipped", "No postings are pending normalization")
         return 0
 
     batch, errors, scores, saved = [], [], [], 0
@@ -178,16 +180,30 @@ def normalize() -> int:
 
             if len(batch) >= CHECKPOINT:
                 saved += db.save_normalized(batch)
-                print(f"  {saved}/{len(postings)} normalized", flush=True)
+                logger.info(
+                    "normalize_checkpoint",
+                    "Normalization checkpoint reached",
+                    normalized=saved,
+                    total=len(postings),
+                )
                 batch.clear()
     saved += db.save_normalized(batch)
 
     scores = [s for s in scores if s is not None]
-    print(f"{saved} normalized -> postgres")
+    logger.info("normalize_completed", "Normalization completed", normalized=saved)
     if scores:
-        print(f"verbatim fidelity {sum(scores) / len(scores):.1%} over {len(scores)} postings")
+        logger.info(
+            "verbatim_fidelity_measured",
+            "Verbatim fidelity measured",
+            fidelity=round(sum(scores) / len(scores), 4),
+            postings=len(scores),
+        )
     if errors:
-        print(f"{len(errors)} failed, e.g. {errors[:2]}", file=sys.stderr)
+        logger.error(
+            "normalize_failures",
+            "Some postings failed to normalize",
+            failed=len(errors),
+        )
     return 0
 
 

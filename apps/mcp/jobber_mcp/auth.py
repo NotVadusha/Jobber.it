@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import hashlib
-import logging
 
 import anyio.to_thread
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from jobber import db
+from jobber.logging import get_logger
 
-log = logging.getLogger("jobber_mcp.auth")
+logger = get_logger(service="mcp", module=__name__)
 
 
 def digest(token: str) -> str:
@@ -39,20 +39,24 @@ class Bearer:
 
         token = presented(scope)
         if token is None:
-            await self._deny(send, "no bearer token")
+            await self._deny(send, "missing_bearer_token")
             return
 
         hashed = digest(token)
         row = await anyio.to_thread.run_sync(db.token_by_hash, hashed)
         if not accepted(row):
-            await self._deny(send, f"token {hashed[:8]}… rejected")
+            await self._deny(send, "rejected_bearer_token")
             return
 
         await self.app(scope, receive, send)
 
     @staticmethod
-    async def _deny(send: Send, why: str) -> None:
-        log.warning("401 %s", why)
+    async def _deny(send: Send, reason: str) -> None:
+        logger.warning(
+            "mcp_request_unauthorized",
+            "MCP request rejected",
+            reason=reason,
+        )
         await send({
             "type": "http.response.start",
             "status": 401,

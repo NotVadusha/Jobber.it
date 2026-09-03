@@ -25,7 +25,12 @@ jobber = "jobber.__main__:main"
 # so no shipped image carries an ORM. Migrations run from a workstation against
 # the target DATABASE_URL — see the README's Database section.
 [dependency-groups]
-dev = ["pytest>=8", "sqlalchemy>=2.0", "alembic>=1.13"]
+dev = [
+    "pytest>=8",
+    "sqlalchemy>=2.0",
+    "alembic>=1.13",
+    "import-linter>=2.14",
+]
 
 [build-system]
 requires = ["hatchling"]
