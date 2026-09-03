@@ -55,6 +55,11 @@ class PostedWithin(StrEnum):
     MONTH = "30d"
 
 
+class CatalogueSort(StrEnum):
+    NEWEST = "newest"
+    SALARY = "salary"
+
+
 class PostingFilters(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
