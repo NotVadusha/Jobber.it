@@ -1,6 +1,6 @@
 import pytest
 
-from jobber import index
+from jobber import pinecone
 from jobber_mcp import server
 
 SECTIONS = ("requirements", "responsibilities", "description")
@@ -16,12 +16,12 @@ def chunks(n: int, salary_max=None):
 @pytest.fixture
 def hits(monkeypatch):
     def use(n, **kw):
-        monkeypatch.setattr(server.index, "search", lambda *a, **k: chunks(n, **kw))
+        monkeypatch.setattr(server.pinecone, "search", lambda *a, **k: chunks(n, **kw))
     return use
 
 
 def test_dedupe_collapses_every_section_of_a_posting_into_one_card():
-    out = index.dedupe_by_posting(chunks(3))
+    out = pinecone.dedupe_by_posting(chunks(3))
     assert [h["posting_id"] for h in out] == ["p0", "p1", "p2"]
 
 

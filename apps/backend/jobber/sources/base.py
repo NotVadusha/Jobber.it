@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import re
-import sys
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 
 from selectolax.parser import HTMLParser
+
+from ..logging import get_logger
+
+logger = get_logger(service="backend", module=__name__)
 
 
 @dataclass(slots=True)
@@ -71,7 +74,12 @@ def boards(fetch, companies: list[str], url: str, params: dict | None = None):
         try:
             yield slug, fetch.get_json(url.format(slug), params)
         except Exception as e:  # noqa: BLE001
-            print(f"    {slug}: skipped ({type(e).__name__})", file=sys.stderr)
+            logger.warning(
+                "board_skipped",
+                "Board fetch failed and was skipped",
+                slug=slug,
+                error_type=type(e).__name__,
+            )
 
 
 def _clean(text: str) -> str:

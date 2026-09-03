@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
-import sys
 
 from jobber import db
 from jobber.http import Fetcher
 from jobber.sources import REGISTRY
+from jobber.logging import get_logger
 
 from .. import boot_no_llm, noargs
 from .sources import OPTIONS
 
 UPSERT_BATCH = 500
+
+logger = get_logger(service="cron", module=__name__)
 
 
 def scrape() -> int:
@@ -37,17 +39,33 @@ def scrape() -> int:
                 db.upsert(batch)
         except Exception as e:
             error = f"{type(e).__name__}: {e}"
-            print(f"  {name}: FAILED after {len(seen)} — {error}", file=sys.stderr)
+            logger.error(
+                "source_scrape_failed",
+                "Source scrape failed",
+                source=name,
+                scraped=len(seen),
+                error_type=type(e).__name__,
+            )
 
         ok = error is None and len(seen) > 0
         db.finish_run(run_id, ok=ok, count=len(seen), error=error)
         if error:
             failed += 1
-        note = "" if ok else "  (not authoritative — prune will skip this source)"
-        print(f"  {name}: {len(seen)} postings{note}")
+        logger.info(
+            "source_scraped",
+            "Source scrape finished",
+            source=name,
+            postings=len(seen),
+            authoritative=ok,
+        )
         total += len(seen)
 
-    print(f"total: {total} -> postgres")
+    logger.info(
+        "scrape_completed",
+        "Scrape completed",
+        postings=total,
+        failed_sources=failed,
+    )
     return 1 if failed == len(REGISTRY) else 0
 
 

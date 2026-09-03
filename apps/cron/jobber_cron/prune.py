@@ -5,7 +5,8 @@ from collections import defaultdict
 from datetime import UTC, datetime, timedelta
 
 from jobber import db
-from jobber import index as index_mod
+from jobber import pinecone
+from jobber.logging import get_logger
 from jobber.http import Fetcher
 
 from . import boot_no_llm
@@ -18,6 +19,8 @@ RECHECK = frozenset({"linkedin"})
 MAX_AGE = {"linkedin": timedelta(days=3)}
 
 PROBE_CAP = 25
+
+logger = get_logger(service="cron", module=__name__)
 
 GONE, ALIVE, UNKNOWN = "gone", "alive", "unknown"
 
@@ -117,41 +120,65 @@ def confirm(
 def prune(dry_run: bool = False) -> int:
     runs = db.latest_ok_runs()
     if not runs:
-        print("no successful scrape on record — nothing is authoritative yet")
+        logger.warning(
+            "prune_skipped",
+            "No successful scrape on record; nothing is authoritative yet",
+        )
         return 0
     nominated = candidates(db.live_postings(), runs)
     if not nominated:
-        print("nothing to prune")
+        logger.info("prune_skipped", "No postings are eligible for pruning")
         return 0
 
     needs_check = sum(1 for r in nominated if r["source"] in CONFIRM)
 
-    print(f"{len(nominated)} examined "
-          f"({needs_check} may need a URL check: {', '.join(sorted(CONFIRM))}, "
-          f"at most {PROBE_CAP} probes each)")
+    logger.info(
+        "prune_started",
+        "Prune candidates examined",
+        examined=len(nominated),
+        needs_url_check=needs_check,
+        confirm_sources=sorted(CONFIRM),
+        probe_cap=PROBE_CAP,
+    )
 
     with Fetcher(delay=CHECK_DELAY, cache=False) as fetch:
         verdicts = confirm(fetch, nominated)
     gone, alive, unknown = verdicts[GONE], verdicts[ALIVE], verdicts[UNKNOWN]
 
     deferred = len(nominated) - (len(gone) + len(alive) + len(unknown))
-    print(f"  gone: {len(gone)}  still live: {len(alive)}  unresolved: {len(unknown)}"
-          + (f"  over probe budget: {deferred}" if deferred else ""))
+    logger.info(
+        "prune_verdicts",
+        "Prune verdicts resolved",
+        gone=len(gone),
+        alive=len(alive),
+        unresolved=len(unknown),
+        over_probe_budget=deferred,
+    )
     if unknown or deferred:
-        print("  anything unresolved keeps its chunks and is re-checked next run")
+        logger.info(
+            "prune_deferred",
+            "Unresolved postings keep their chunks and are re-checked next run",
+        )
 
     if dry_run:
-        print("\ndry run — nothing deleted")
-        for row in nominated[:10]:
-            print(f"  {row['id']:32} {row['url']}")
+        logger.info(
+            "prune_dry_run",
+            "Dry run; nothing deleted",
+            sample_posting_ids=[row["id"] for row in nominated[:10]],
+        )
         return 0
 
     db.touch(alive)
     if not gone:
         return 0
-    deleted = index_mod.delete(gone)
+    deleted = pinecone.delete(gone)
     db.mark_delisted(gone)
-    print(f"{deleted} chunk ids deleted, {len(gone)} postings delisted")
+    logger.info(
+        "prune_completed",
+        "Prune completed",
+        chunks_deleted=deleted,
+        postings_delisted=len(gone),
+    )
     return 0
 
 

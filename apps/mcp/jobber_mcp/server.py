@@ -2,12 +2,21 @@ from __future__ import annotations
 
 from mcp.server.mcpserver import MCPServer
 
-from jobber import db, index, pipeline
+from jobber import db, pinecone, pipeline
+from jobber.postings import PostingFilters
 
 from .auth import Bearer
 
 CHUNK_CAP = 300
 MAX_PAGE_SIZE = 25
+
+# The MCP card is this server's own wire shape, not the browser's typed posting.
+CARD_FIELDS = tuple(field for field in pinecone.META if field != "posting_id")
+
+
+def _card(hit: dict) -> dict:
+    return {"id": hit["posting_id"], **{k: hit.get(k) for k in CARD_FIELDS},
+            "score": round(hit.get("score") or 0.0, 4)}
 
 
 server = MCPServer(
@@ -54,21 +63,21 @@ def search_jobs(
     page = max(1, page)
     page_size = max(1, min(page_size, MAX_PAGE_SIZE))
 
-    filters = pipeline.Filters(
+    filters = PostingFilters(
         remote_policy=remote_policy or [],
         seniority=seniority or [],
         source=source or [],
-        max_years=max_years,
+        experience_years=max_years,
         min_salary=min_salary,
     )
     clauses, applied = pipeline.clauses(filters)
 
-    top_k = min(page * page_size * len(index.SECTIONS), CHUNK_CAP)
+    top_k = min(page * page_size * len(pinecone.SECTIONS), CHUNK_CAP)
 
-    hits = index.search(requirements_text, " ".join(stack or []),
-                        index.combine(clauses), top_k)
+    hits = pinecone.search(requirements_text, " ".join(stack or []),
+                        pinecone.combine(clauses), top_k)
 
-    results = pipeline.min_salary(index.dedupe_by_posting(hits), min_salary)
+    results = pipeline.min_salary(pinecone.dedupe_by_posting(hits), min_salary)
     if min_salary is not None:
         applied.append({"field": "min_salary", "label": f"≥ ${min_salary // 1000}k",
                         "note": "postings without a stated salary are kept"})
@@ -77,7 +86,7 @@ def search_jobs(
     capped = top_k == CHUNK_CAP and len(hits) >= top_k
 
     return {
-        "results": [pipeline.card(hit) for hit in window],
+        "results": [_card(hit) for hit in window],
         "page": page,
         "page_size": page_size,
         "has_more": len(results) > page * page_size,

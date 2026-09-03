@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from jobber import index
+from jobber import pinecone
 from jobber_cron.prune import (
     ALIVE, GONE, PROBE_CAP, UNKNOWN, candidates, classify, confirm,
 )
@@ -178,8 +178,8 @@ def test_chunk_ids_cover_every_id_chunks_would_write():
         "stack": ["Python"], "requirements_text": "3 years", "description_text": "prose",
         "responsibilities_text": "",
     }
-    written = {c["_id"] for c in index.chunks(posting)}
-    constructed = {f"djinni:1#{section}" for section in index.SECTIONS}
+    written = {c["_id"] for c in pinecone.chunks(posting)}
+    constructed = {f"djinni:1#{section}" for section in pinecone.SECTIONS}
     assert written <= constructed
     assert written == {"djinni:1#requirements", "djinni:1#description"}
     assert constructed - written == {"djinni:1#responsibilities"}
@@ -237,8 +237,8 @@ def test_the_guard_is_per_source_not_global():
 
 
 def test_combine_folds_clauses_without_a_redundant_wrapper():
-    assert index.combine([]) is None
+    assert pinecone.combine([]) is None
     one = {"seniority": {"$in": ["senior"]}}
-    assert index.combine([one]) == one
+    assert pinecone.combine([one]) == one
     two = [one, {"years_required": {"$lte": 3}}]
-    assert index.combine(two) == {"$and": two}
+    assert pinecone.combine(two) == {"$and": two}
