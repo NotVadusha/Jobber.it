@@ -4,6 +4,7 @@ import { expect, test } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
 
 import { completedStream, encodeStream, posting } from './fixtures/best-match-stream'
+import { grantCvConsent } from './harness/cv-consent'
 
 const PDF_FIXTURE = fileURLToPath(new URL('./fixtures/profile.pdf', import.meta.url))
 
@@ -16,6 +17,7 @@ const metaWire = {
       { source: 'djinni', count: 121 },
     ],
     retrieval: 'hybrid+rerank',
+    rewrite_provider: 'openai',
   },
   meta: { request_id: 'req-meta' },
 }
@@ -148,16 +150,17 @@ test('enforces the 500 character query limit', async ({ page }) => {
 })
 
 test('attaches and removes a text CV through the visible form', async ({ page }) => {
+  await grantCvConsent(page)
   await page.goto('/')
-  const file = page.getByLabel(/Attach a CV/)
+  const file = page.getByLabel(/Drop a CV here, or choose a file/)
   await file.setInputFiles({
     name: 'profile.txt',
     mimeType: 'text/plain',
     buffer: Buffer.from('PostgreSQL and Python experience'),
   })
-  await expect(page.getByText('profile.txt')).toBeVisible()
+  await expect(page.getByText('profile.txt').first()).toBeVisible()
   await page.getByRole('button', { name: 'Remove' }).click()
-  await expect(page.getByText('profile.txt')).toBeHidden()
+  await expect(page.getByText('profile.txt')).toHaveCount(0)
 })
 
 test('extracts text from an attached PDF and sends it as profile text', async ({ page }) => {
@@ -170,9 +173,10 @@ test('extracts text from an attached PDF and sends it as profile text', async ({
     })
   })
 
+  await grantCvConsent(page)
   await page.goto('/')
-  await page.getByLabel(/Attach a CV/).setInputFiles(PDF_FIXTURE)
-  await expect(page.getByText('profile.pdf')).toBeVisible()
+  await page.getByLabel(/Drop a CV here, or choose a file/).setInputFiles(PDF_FIXTURE)
+  await expect(page.getByText('profile.pdf').first()).toBeVisible()
 
   await triggerBestMatch(page)
   await expect(page.getByText('Nothing cleared your filters')).toBeVisible()

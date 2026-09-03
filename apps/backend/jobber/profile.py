@@ -23,8 +23,22 @@ Extract only what the input states or plainly implies — never invent a technol
 person did not name.
 
 `stack` is technologies only — the exact tokens a posting would name.
+
+The input has up to two labelled sections. The goal governs what is being sought. \
+The background supplies capabilities, technologies, and depth of experience. When the \
+two disagree, the goal wins: a backend engineer whose goal is machine learning is \
+looking for machine-learning roles, not backend roles. A technology that appears only \
+in the background is not a sought technology unless there is no goal, or the goal \
+plainly implies it. With a background and no goal, infer the sought role from the most \
+substantial and most recent experience.
+
 Input may be in English, Ukrainian, or Russian; always write the output in English, \
 since the postings' structured fields are normalized to English."""
+
+PROVIDER = providers.DEFAULT
+
+GOAL_HEADING = "Current goal — what this person is looking for now:"
+BACKGROUND_HEADING = "Background — what this person has done, as supporting evidence:"
 
 
 class Query(BaseModel):
@@ -39,10 +53,24 @@ class Query(BaseModel):
     )
 
 
+def _message(goal: str, background: str) -> str:
+    sections = []
+    if goal:
+        sections.append(f"{GOAL_HEADING}\n{goal}")
+    if background:
+        sections.append(f"{BACKGROUND_HEADING}\n{background}")
+    return "\n\n".join(sections)
+
+
 def to_query(
-    text: str,
-    provider: str = providers.DEFAULT,
+    *,
+    goal: str,
+    background: str,
+    provider: str = PROVIDER,
     model: str | None = None,
     timeout: float | None = None,
 ) -> Query:
-    return providers.call(provider, SYSTEM, text, Query, model, timeout=timeout)
+    message = _message(goal.strip(), background.strip())
+    if not message:
+        raise ValueError("to_query requires a goal or a background")
+    return providers.call(provider, SYSTEM, message, Query, model, timeout=timeout)

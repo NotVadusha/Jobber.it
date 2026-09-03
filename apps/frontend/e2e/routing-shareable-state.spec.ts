@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 import { completedStream, encodeStream } from './fixtures/best-match-stream'
+import { grantCvConsent } from './harness/cv-consent'
 
 // Exercises production routing exclusively through direct URLs, visible
 // controls, native anchors, Back/Forward, and browser history — this spec
@@ -361,8 +362,9 @@ test.describe('search integration', () => {
 
   test('a CV-only search never touches the URL', async ({ page }) => {
     await mockSearch(page)
+    await grantCvConsent(page)
     await page.goto('/')
-    await page.getByLabel(/Attach a CV/).setInputFiles({
+    await page.getByLabel(/Drop a CV here, or choose a file/).setInputFiles({
       name: 'profile.txt',
       mimeType: 'text/plain',
       buffer: Buffer.from('Python postgres experience'),
@@ -384,8 +386,9 @@ test.describe('search integration', () => {
       })
     })
 
+    await grantCvConsent(page)
     await page.goto('/')
-    await page.getByLabel(/Attach a CV/).setInputFiles({
+    await page.getByLabel(/Drop a CV here, or choose a file/).setInputFiles({
       name: 'profile.txt',
       mimeType: 'text/plain',
       buffer: Buffer.from('Python postgres experience'),

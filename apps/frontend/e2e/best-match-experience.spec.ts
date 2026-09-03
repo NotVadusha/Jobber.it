@@ -46,7 +46,7 @@ test.describe('best-match real-path lifecycle', () => {
 
     const rewrite = stageRow(page, 'rewrite')
     await expect(rewrite.getByText('skipped', { exact: true })).toBeVisible()
-    await expect(rewrite).toContainText('raw search text; rewrite unavailable')
+    await expect(rewrite).toContainText('raw goal; rewrite unavailable')
 
     const filter = stageRow(page, 'filter')
     await expect(filter.getByText('ran', { exact: true })).toBeVisible()

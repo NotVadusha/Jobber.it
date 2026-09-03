@@ -241,6 +241,8 @@ export interface components {
             corpus_size: number;
             /** Retrieval */
             retrieval: string;
+            /** Rewrite Provider */
+            rewrite_provider: string;
             /** Source Counts */
             source_counts: components["schemas"]["SourceCountData"][];
             /** Sources */

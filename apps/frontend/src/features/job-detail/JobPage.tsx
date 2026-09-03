@@ -1,16 +1,15 @@
-import { useState, type ReactElement } from 'react'
+import type { ReactElement } from 'react'
 
 import { ApiError } from '@/api/client'
 import { isPostingNotFound, usePostingDetailQuery } from '@/api/postings'
 import { Breadcrumb } from '@/features/job-detail/Breadcrumb'
 import { JobBody } from '@/features/job-detail/JobBody'
+import { CopyLinkButton } from '@/features/jobs/CopyLinkButton'
 import { useSavedJobs } from '@/features/saved/saved-jobs'
 import { navigate } from '@/routing/hash-router'
 import { defaultJobsState } from '@/routing/jobs-model'
-import { copyRoutePermalink, type CopyPermalinkResult } from '@/routing/permalink'
 import { PageState } from '@/ui/PageState'
 import { Skeleton } from '@/ui/Skeleton'
-import { useToast } from '@/ui/toast'
 
 const ACTION_CLASS =
   'min-h-10 rounded-sm border border-subtle px-4 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-secondary hover:border-strong hover:text-primary'
@@ -28,18 +27,6 @@ export function JobPage({ postingId }: { postingId: string }): ReactElement {
     refetch,
   } = usePostingDetailQuery(postingId)
   const { isSaved, remove } = useSavedJobs()
-  const { showToast } = useToast()
-  const [permalink, setPermalink] = useState<CopyPermalinkResult | null>(null)
-
-  const onCopyLink = async (): Promise<void> => {
-    const result = await copyRoutePermalink({ name: 'job', postingId })
-    if (result.copied) {
-      setPermalink(null)
-      showToast({ message: 'Link copied', tone: 'success' })
-      return
-    }
-    setPermalink(result)
-  }
 
   const posting = detail?.data ?? null
 
@@ -98,22 +85,12 @@ export function JobPage({ postingId }: { postingId: string }): ReactElement {
           <JobBody
             posting={posting}
             actions={
-              <button type="button" onClick={() => void onCopyLink()} className={ACTION_CLASS}>
-                Copy link
-              </button>
+              <CopyLinkButton
+                route={{ name: 'job', postingId }}
+                className={ACTION_CLASS}
+              />
             }
           />
-          {permalink && !permalink.copied && (
-            <label className="mt-3 flex flex-col gap-1 text-xs text-tertiary">
-              Copy this link manually
-              <input
-                readOnly
-                value={permalink.url}
-                onFocus={(event) => event.currentTarget.select()}
-                className="w-full rounded-sm border border-subtle bg-surface px-2 py-1 font-mono text-xs text-secondary"
-              />
-            </label>
-          )}
         </>
       )}
     </section>

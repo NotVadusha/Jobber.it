@@ -7,6 +7,7 @@ import {
   posting,
   type WireStreamEvent,
 } from './fixtures/best-match-stream'
+import { grantCvConsent } from './harness/cv-consent'
 
 // Wire-fixture coverage for Plan 7 (docs/plans/07-live-best-match-experience.md
 // §15.5, cases 12-23). Every case installs exactly one
@@ -27,6 +28,7 @@ const metaWire = {
       { source: 'djinni', count: 121 },
     ],
     retrieval: 'hybrid+rerank',
+    rewrite_provider: 'openai',
   },
   meta: { request_id: 'req-meta' },
 }
@@ -188,11 +190,12 @@ test('editing the query after a completed run shows the pending banner and rerun
 
 test('attaching a CV after a completed run also marks the ranking pending', async ({ page }) => {
   await installStream(page, (route) => fulfilStream(route, completedStream([posting(1, 0.9)])))
+  await grantCvConsent(page)
 
   await page.goto('/#/jobs?q=python&view=best')
   await expect(cards(page)).toHaveCount(1)
 
-  await page.getByLabel(/Attach a CV/).setInputFiles({
+  await page.getByLabel(/Drop a CV here, or choose a file/).setInputFiles({
     name: 'profile.txt',
     mimeType: 'text/plain',
     buffer: Buffer.from('PostgreSQL and Python experience'),
