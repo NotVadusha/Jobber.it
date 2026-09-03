@@ -172,10 +172,15 @@ export interface components {
             error: components["schemas"]["ErrorBody"];
             meta: components["schemas"]["ResponseMeta"];
         };
+        /**
+         * EvidenceField
+         * @enum {string}
+         */
+        EvidenceField: "title" | "company" | "location" | "stack" | "requirements" | "responsibilities" | "description";
         /** LiteralHit */
         LiteralHit: {
             /** Fields */
-            fields?: string[];
+            fields: components["schemas"]["EvidenceField"][];
             /** Term */
             term: string;
         };
@@ -226,6 +231,11 @@ export interface components {
             source?: components["schemas"]["SourceId"][];
         };
         /**
+         * PostingSection
+         * @enum {string}
+         */
+        PostingSection: "requirements" | "responsibilities" | "description";
+        /**
          * PostingSeniority
          * @enum {string}
          */
@@ -266,7 +276,7 @@ export interface components {
             /** Literal Hits */
             literal_hits?: components["schemas"]["LiteralHit"][];
             /** Retrieved Sections */
-            retrieved_sections?: string[];
+            retrieved_sections?: components["schemas"]["PostingSection"][];
         };
         /**
          * RemoteFilter
@@ -324,11 +334,17 @@ export interface components {
             count?: number | null;
             /** Detail */
             detail: string;
+            /** Duration Ms */
+            duration_ms?: number | null;
             /** Node */
             node: string;
-            /** Status */
-            status: string;
+            status: components["schemas"]["TraceStatus"];
         };
+        /**
+         * TraceStatus
+         * @enum {string}
+         */
+        TraceStatus: "ran" | "skipped";
     };
     responses: never;
     parameters: never;
@@ -460,6 +476,15 @@ export interface operations {
             };
             /** @description Unprocessable Entity */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

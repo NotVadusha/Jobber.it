@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from functools import lru_cache
 
@@ -170,6 +170,31 @@ def _load_corpus_stats(_time_bucket: int) -> CorpusStats:
 def corpus_stats() -> CorpusStats:
     time_bucket = int(time.monotonic() // CACHE_TTL_SECONDS)
     return _load_corpus_stats(time_bucket)
+
+
+def live_candidates(
+    posting_ids: Sequence[str],
+    filters: PostingFilters,
+) -> dict[str, PostingSummary]:
+    if not posting_ids:
+        return {}
+
+    where_sql, where_parameters = _where_sql(query="", filters=filters)
+    candidates_sql = (
+        f"select {_SUMMARY_COLUMNS_SQL} from postings "
+        f"where {where_sql} and id = any(%s::text[])"
+    )
+
+    try:
+        with db.conn() as connection:
+            rows = connection.execute(
+                candidates_sql,
+                [*where_parameters, list(posting_ids)],
+            ).fetchall()
+    except (psycopg.Error, PoolTimeout):
+        raise CatalogueUnavailable from None
+
+    return {str(row["id"]): _posting_summary(row) for row in rows}
 
 
 def query_postings(

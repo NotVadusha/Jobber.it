@@ -19,6 +19,39 @@ def _card(hit: dict) -> dict:
             "score": round(hit.get("score") or 0.0, 4)}
 
 
+def _one_card_per_posting(hits: list[dict]) -> list[dict]:
+    best: dict[str, dict] = {}
+    for hit in hits:
+        best.setdefault(hit.get("posting_id", hit["id"]), hit)
+    return list(best.values())
+
+
+def _at_least(hits: list[dict], floor: int | None) -> list[dict]:
+    if floor is None:
+        return hits
+    return [h for h in hits if (cap := h.get("salary_max")) is None or cap >= floor]
+
+
+def _applied(filters: PostingFilters) -> list[dict]:
+    applied: list[dict] = []
+
+    for field in ("remote_policy", "seniority", "source"):
+        values = getattr(filters, field)
+        if values:
+            applied.append({
+                "field": field,
+                "label": " / ".join(value.value for value in values),
+            })
+
+    if filters.experience_years is not None:
+        applied.append({
+            "field": "experience_years",
+            "label": f"≤ {filters.experience_years} yrs",
+        })
+
+    return applied
+
+
 server = MCPServer(
     name="jobber",
     title="Jobber job index",
@@ -70,14 +103,20 @@ def search_jobs(
         experience_years=max_years,
         min_salary=min_salary,
     )
-    clauses, applied = pipeline.clauses(filters)
+    constraints = pipeline.index_constraints(filters)
+    applied = _applied(filters)
 
     top_k = min(page * page_size * len(pinecone.SECTIONS), CHUNK_CAP)
 
-    hits = pinecone.search(requirements_text, " ".join(stack or []),
-                        pinecone.combine(clauses), top_k)
+    hits = pinecone.search(
+        dense_text=requirements_text,
+        sparse_text=" ".join(stack or []),
+        filters=pinecone.combine(constraints),
+        top_k=top_k,
+        fields=pinecone.FIELDS,
+    )
 
-    results = pipeline.min_salary(pinecone.dedupe_by_posting(hits), min_salary)
+    results = _at_least(_one_card_per_posting(hits), min_salary)
     if min_salary is not None:
         applied.append({"field": "min_salary", "label": f"≥ ${min_salary // 1000}k",
                         "note": "postings without a stated salary are kept"})

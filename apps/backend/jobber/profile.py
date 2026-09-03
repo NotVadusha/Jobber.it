@@ -39,5 +39,10 @@ class Query(BaseModel):
     )
 
 
-def to_query(text: str, provider: str = providers.DEFAULT, model: str | None = None) -> Query:
-    return providers.call(provider, SYSTEM, text, Query, model)
+def to_query(
+    text: str,
+    provider: str = providers.DEFAULT,
+    model: str | None = None,
+    timeout: float | None = None,
+) -> Query:
+    return providers.call(provider, SYSTEM, text, Query, model, timeout=timeout)

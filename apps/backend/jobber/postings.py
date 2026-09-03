@@ -55,6 +55,22 @@ class PostedWithin(StrEnum):
     MONTH = "30d"
 
 
+class PostingSection(StrEnum):
+    REQUIREMENTS = "requirements"
+    RESPONSIBILITIES = "responsibilities"
+    DESCRIPTION = "description"
+
+
+class EvidenceField(StrEnum):
+    TITLE = "title"
+    COMPANY = "company"
+    LOCATION = "location"
+    STACK = "stack"
+    REQUIREMENTS = "requirements"
+    RESPONSIBILITIES = "responsibilities"
+    DESCRIPTION = "description"
+
+
 class CatalogueSort(StrEnum):
     NEWEST = "newest"
     SALARY = "salary"
@@ -105,15 +121,15 @@ class PostingSummary(BaseModel):
 class LiteralHit(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    term: str
-    fields: list[str] = Field(default_factory=list)
+    term: str = Field(min_length=1)
+    fields: list[EvidenceField] = Field(min_length=1)
 
 
 class RankingEvidence(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     literal_hits: list[LiteralHit] = Field(default_factory=list)
-    retrieved_sections: list[str] = Field(default_factory=list)
+    retrieved_sections: list[PostingSection] = Field(default_factory=list)
 
 
 class BestMatchPosting(PostingSummary):

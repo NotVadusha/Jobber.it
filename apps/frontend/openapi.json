@@ -348,23 +348,39 @@
         "title": "ErrorResponse",
         "type": "object"
       },
+      "EvidenceField": {
+        "enum": [
+          "title",
+          "company",
+          "location",
+          "stack",
+          "requirements",
+          "responsibilities",
+          "description"
+        ],
+        "title": "EvidenceField",
+        "type": "string"
+      },
       "LiteralHit": {
         "additionalProperties": false,
         "properties": {
           "fields": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/EvidenceField"
             },
+            "minItems": 1,
             "title": "Fields",
             "type": "array"
           },
           "term": {
+            "minLength": 1,
             "title": "Term",
             "type": "string"
           }
         },
         "required": [
-          "term"
+          "term",
+          "fields"
         ],
         "title": "LiteralHit",
         "type": "object"
@@ -518,6 +534,15 @@
         },
         "title": "PostingFilters",
         "type": "object"
+      },
+      "PostingSection": {
+        "enum": [
+          "requirements",
+          "responsibilities",
+          "description"
+        ],
+        "title": "PostingSection",
+        "type": "string"
       },
       "PostingSeniority": {
         "enum": [
@@ -676,7 +701,7 @@
           },
           "retrieved_sections": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/PostingSection"
             },
             "title": "Retrieved Sections",
             "type": "array"
@@ -857,13 +882,24 @@
             "title": "Detail",
             "type": "string"
           },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
+          },
           "node": {
             "title": "Node",
             "type": "string"
           },
           "status": {
-            "title": "Status",
-            "type": "string"
+            "$ref": "#/components/schemas/TraceStatus"
           }
         },
         "required": [
@@ -873,6 +909,14 @@
         ],
         "title": "TraceNode",
         "type": "object"
+      },
+      "TraceStatus": {
+        "enum": [
+          "ran",
+          "skipped"
+        ],
+        "title": "TraceStatus",
+        "type": "string"
       }
     }
   },
@@ -1022,6 +1066,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
