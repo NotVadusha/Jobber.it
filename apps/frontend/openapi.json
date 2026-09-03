@@ -252,6 +252,41 @@
         "title": "BestMatchRequest",
         "type": "object"
       },
+      "CatalogueQueryRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "filters": {
+            "$ref": "#/components/schemas/PostingFilters"
+          },
+          "page": {
+            "default": 1,
+            "maximum": 9007199254740991.0,
+            "minimum": 1.0,
+            "title": "Page",
+            "type": "integer"
+          },
+          "query": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Query",
+            "type": "string"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/CatalogueSort",
+            "default": "newest"
+          }
+        },
+        "title": "CatalogueQueryRequest",
+        "type": "object"
+      },
+      "CatalogueSort": {
+        "enum": [
+          "newest",
+          "salary"
+        ],
+        "title": "CatalogueSort",
+        "type": "string"
+      },
       "ErrorBody": {
         "additionalProperties": false,
         "properties": {
@@ -290,6 +325,7 @@
           "VALIDATION_ERROR",
           "RATE_LIMITED",
           "SEARCH_UNAVAILABLE",
+          "CATALOGUE_UNAVAILABLE",
           "INTERNAL_ERROR"
         ],
         "title": "ErrorCode",
@@ -345,6 +381,13 @@
             "title": "Retrieval",
             "type": "string"
           },
+          "source_counts": {
+            "items": {
+              "$ref": "#/components/schemas/SourceCountData"
+            },
+            "title": "Source Counts",
+            "type": "array"
+          },
           "sources": {
             "items": {
               "$ref": "#/components/schemas/SourceId"
@@ -356,6 +399,7 @@
         "required": [
           "corpus_size",
           "sources",
+          "source_counts",
           "retrieval"
         ],
         "title": "MetaData",
@@ -488,6 +532,138 @@
         "title": "PostingSeniority",
         "type": "string"
       },
+      "PostingSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "company": {
+            "title": "Company",
+            "type": "string"
+          },
+          "first_seen_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Seen At"
+          },
+          "id": {
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "posted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Posted At"
+          },
+          "remote_policy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RemotePolicy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "salary_max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Salary Max"
+          },
+          "salary_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Salary Min"
+          },
+          "seniority": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PostingSeniority"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceId"
+          },
+          "stack": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Stack",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "title": "Url",
+            "type": "string"
+          },
+          "years_required": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Years Required"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "url",
+          "title",
+          "company"
+        ],
+        "title": "PostingSummary",
+        "type": "object"
+      },
       "RankingEvidence": {
         "additionalProperties": false,
         "properties": {
@@ -576,6 +752,25 @@
         "title": "SeniorityFilter",
         "type": "string"
       },
+      "SourceCountData": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "minimum": 0.0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceId"
+          }
+        },
+        "required": [
+          "source",
+          "count"
+        ],
+        "title": "SourceCountData",
+        "type": "object"
+      },
       "SourceId": {
         "enum": [
           "greenhouse",
@@ -621,6 +816,27 @@
           "meta"
         ],
         "title": "SuccessResponse[MetaData]",
+        "type": "object"
+      },
+      "SuccessResponse_list_PostingSummary__": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/PostingSummary"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "SuccessResponse[list[PostingSummary]]",
         "type": "object"
       },
       "TraceNode": {
@@ -690,9 +906,77 @@
               }
             },
             "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Meta"
+      }
+    },
+    "/api/postings/query": {
+      "post": {
+        "operationId": "query_postings_api_postings_query_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogueQueryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_list_PostingSummary__"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Query Postings"
       }
     },
     "/api/search": {
@@ -758,6 +1042,16 @@
               }
             },
             "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "summary": "Search"

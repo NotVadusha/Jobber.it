@@ -13,7 +13,9 @@ CRON    := uv run --project apps/cron
 MCP     := uv run --project apps/mcp
 WEB     := npm --prefix apps/frontend
 
-.PHONY: install serve mcp web build test e2e lint check verify verify-full \
+E2E_DATABASE_URL ?= postgresql://postgres:postgres@127.0.0.1:5432/jobber_e2e
+
+.PHONY: install serve mcp web build test e2e e2e-db-guard e2e-db lint check verify verify-full \
         api-contracts api-contracts-check clean migrate stamp token
 
 install:
@@ -69,8 +71,19 @@ check: api-contracts-check
 	$(WEB) run typecheck
 	$(BACKEND) lint-imports --config apps/backend/.importlinter
 
-e2e:
-	$(WEB) run e2e
+e2e-db-guard:
+	@database_name="$$(psql "$(E2E_DATABASE_URL)" -Atc 'select current_database()')"; \
+	case "$$database_name" in \
+		*_e2e) ;; \
+		*) echo "refusing E2E database: $$database_name"; exit 1 ;; \
+	esac
+
+e2e-db: e2e-db-guard
+	cd apps/backend && DATABASE_URL="$(E2E_DATABASE_URL)" uv run alembic upgrade head
+	psql "$(E2E_DATABASE_URL)" -f apps/frontend/e2e/fixtures/catalogue.sql
+
+e2e: e2e-db
+	E2E_DATABASE_URL="$(E2E_DATABASE_URL)" $(WEB) run e2e
 
 verify: check test e2e
 
