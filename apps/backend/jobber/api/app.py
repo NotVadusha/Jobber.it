@@ -2,17 +2,18 @@ from __future__ import annotations
 
 import time
 import uuid
-from collections.abc import Awaitable, Callable
-from typing import Any
+from collections.abc import Awaitable, Callable, Iterator
+from typing import Annotated, Any
 
-from fastapi import FastAPI, Request, Response
+from fastapi import Depends, FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.sse import EventSourceResponse
 
 from .. import catalog, config, ranking
 from ..logging import get_logger
 from ..postings import PostingSummary
-from . import ratelimit
+from . import ratelimit, stream
 from .contracts import (
     BestMatchData,
     BestMatchRequest,
@@ -23,6 +24,10 @@ from .contracts import (
     MetaData,
     PaginationMeta,
     ResponseMeta,
+    SearchCompleted,
+    SearchFailed,
+    SearchStarted,
+    SearchStreamEvent,
     SourceCountData,
     SuccessResponse,
 )
@@ -154,23 +159,71 @@ async def empty_search(request: Request, _error: ranking.EmptySearch) -> JSONRes
     )
 
 
+_FAILURES: tuple[tuple[type[Exception], int, ErrorCode, str], ...] = (
+    (
+        ranking.SearchUnavailable,
+        502,
+        ErrorCode.SEARCH_UNAVAILABLE,
+        "Best-match search is temporarily unavailable.",
+    ),
+    (
+        catalog.CatalogueUnavailable,
+        503,
+        ErrorCode.CATALOGUE_UNAVAILABLE,
+        "The postings catalogue is temporarily unavailable.",
+    ),
+)
+
+_INTERNAL_FAILURE = (
+    500,
+    ErrorCode.INTERNAL_ERROR,
+    "The server could not complete the request.",
+)
+
+
+def _failure(error: Exception) -> tuple[int, ErrorCode, str]:
+    for failure_type, status_code, code, message in _FAILURES:
+        if isinstance(error, failure_type):
+            return status_code, code, message
+    return _INTERNAL_FAILURE
+
+
+def _search_payload(payload: BestMatchRequest) -> BestMatchRequest:
+    if not payload.query and not payload.profile_text:
+        raise ranking.EmptySearch
+    return payload
+
+
+SearchPayload = Annotated[BestMatchRequest, Depends(_search_payload)]
+
+
+def _best_match_data(
+    payload: BestMatchRequest,
+    snapshot: ranking.RankingSnapshot,
+) -> BestMatchData:
+    return BestMatchData(
+        query=payload.query,
+        terms=list(snapshot.terms),
+        results=list(snapshot.results),
+        filters_applied=list(snapshot.filters_applied),
+        corpus_size=catalog.corpus_stats().count,
+        trace=list(snapshot.trace),
+    )
+
+
 @app.exception_handler(ranking.SearchUnavailable)
 async def search_unavailable(
     request: Request,
-    _error: ranking.SearchUnavailable,
+    error: ranking.SearchUnavailable,
 ) -> JSONResponse:
-    return _error_response(
-        request,
-        status_code=502,
-        code=ErrorCode.SEARCH_UNAVAILABLE,
-        message="Best-match search is temporarily unavailable.",
-    )
+    status_code, code, message = _failure(error)
+    return _error_response(request, status_code=status_code, code=code, message=message)
 
 
 @app.exception_handler(catalog.CatalogueUnavailable)
 async def catalogue_unavailable(
     request: Request,
-    _error: catalog.CatalogueUnavailable,
+    error: catalog.CatalogueUnavailable,
 ) -> JSONResponse:
     logger.warning(
         "catalogue_unavailable",
@@ -178,12 +231,8 @@ async def catalogue_unavailable(
         request_id=_request_id(request),
         path=request.url.path,
     )
-    return _error_response(
-        request,
-        status_code=503,
-        code=ErrorCode.CATALOGUE_UNAVAILABLE,
-        message="The postings catalogue is temporarily unavailable.",
-    )
+    status_code, code, message = _failure(error)
+    return _error_response(request, status_code=status_code, code=code, message=message)
 
 
 @app.exception_handler(Exception)
@@ -276,7 +325,7 @@ def query_postings(
         503: {"model": ErrorResponse},
     },
 )
-def search(request: Request, payload: BestMatchRequest) -> SuccessResponse[BestMatchData]:
+def search(request: Request, payload: SearchPayload) -> SuccessResponse[BestMatchData]:
     started = time.perf_counter()
     snapshot = ranking.rank_best_matches(
         query=payload.query,
@@ -285,16 +334,67 @@ def search(request: Request, payload: BestMatchRequest) -> SuccessResponse[BestM
         request_id=_request_id(request),
     )
     return SuccessResponse(
-        data=BestMatchData(
-            query=payload.query,
-            terms=list(snapshot.terms),
-            results=list(snapshot.results),
-            filters_applied=list(snapshot.filters_applied),
-            corpus_size=catalog.corpus_stats().count,
-            trace=list(snapshot.trace),
-        ),
+        data=_best_match_data(payload, snapshot),
         meta=ResponseMeta(
             request_id=_request_id(request),
             took_ms=round((time.perf_counter() - started) * 1000, 1),
         ),
     )
+
+
+_STREAM_ERRORS: dict[int | str, dict[str, Any]] = {
+    code: {
+        "description": "Error envelope",
+        "content": {
+            "application/json": {
+                "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+            }
+        },
+    }
+    for code in (400, 422, 429)
+}
+
+
+@app.post(
+    "/api/search/stream",
+    response_class=EventSourceResponse,
+    responses=_STREAM_ERRORS,
+)
+def search_stream(
+    request: Request,
+    payload: SearchPayload,
+) -> Iterator[SearchStreamEvent]:
+    request_id = _request_id(request)
+    started = time.perf_counter()
+    stages = ranking.ranked_stages(
+        query=payload.query,
+        profile_text=payload.profile_text,
+        filters=payload.filters,
+        request_id=request_id,
+    )
+
+    yield stream.frame(SearchStarted(request_id=request_id))
+
+    try:
+        snapshot = yield from stream.frames(stages, request_id)
+    except Exception as error:
+        _status_code, code, message = _failure(error)
+        if code is ErrorCode.INTERNAL_ERROR:
+            logger.error(
+                "search_stream_failed",
+                "Best-match stream failed unexpectedly",
+                request_id=request_id,
+                error_type=type(error).__name__,
+                exc_info=True,
+            )
+        yield stream.frame(SearchFailed(
+            request_id=request_id,
+            error=ErrorBody(code=code, message=message),
+        ))
+        return
+
+    yield stream.frame(SearchCompleted(
+        request_id=request_id,
+        snapshot=_best_match_data(payload, snapshot),
+        took_ms=round((time.perf_counter() - started) * 1000, 1),
+    ))

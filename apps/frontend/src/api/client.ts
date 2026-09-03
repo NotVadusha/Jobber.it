@@ -53,6 +53,32 @@ export const api = axios.create({
   headers: { Accept: 'application/json' },
 })
 
+export function apiErrorFrom({ status, payload, requestIdHeader }: {
+  status: number
+  payload: unknown
+  requestIdHeader?: string | null
+}): ApiError {
+  const camelized = camelizeResponse(payload)
+  if (isErrorResponse(camelized)) {
+    return new ApiError({
+      status,
+      code: camelized.error.code,
+      message: camelized.error.message,
+      requestId: camelized.meta.requestId,
+      details: camelized.error.details,
+    })
+  }
+
+  return new ApiError({
+    status,
+    code: status ? 'MALFORMED_ERROR_RESPONSE' : 'NETWORK_ERROR',
+    message: status
+      ? 'The server returned an unreadable error.'
+      : 'The server could not be reached.',
+    requestId: requestIdHeader ?? null,
+  })
+}
+
 api.interceptors.response.use(
   (response) => {
     response.data = camelizeResponse(response.data)
@@ -67,25 +93,11 @@ api.interceptors.response.use(
       return Promise.reject(error)
     }
 
-    const payload = camelizeResponse(error.response?.data)
-    if (isErrorResponse(payload)) {
-      return Promise.reject(new ApiError({
-        status: error.response?.status ?? 0,
-        code: payload.error.code,
-        message: payload.error.message,
-        requestId: payload.meta.requestId,
-        details: payload.error.details,
-      }))
-    }
-
     const headerRequestId = error.response?.headers['x-request-id']
-    return Promise.reject(new ApiError({
+    return Promise.reject(apiErrorFrom({
       status: error.response?.status ?? 0,
-      code: error.response ? 'MALFORMED_ERROR_RESPONSE' : 'NETWORK_ERROR',
-      message: error.response
-        ? 'The server returned an unreadable error.'
-        : 'The server could not be reached.',
-      requestId: typeof headerRequestId === 'string' ? headerRequestId : null,
+      payload: error.response?.data,
+      requestIdHeader: typeof headerRequestId === 'string' ? headerRequestId : null,
     }))
   },
 )

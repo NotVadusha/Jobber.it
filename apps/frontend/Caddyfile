@@ -5,7 +5,14 @@
 # e.g. http://api.railway.internal:8080 — a runtime variable, not baked into the
 # build, so repointing the API is a variable change rather than a rebuild.
 :{$PORT:8080} {
-	encode gzip
+	# The event stream must reach the browser frame by frame. flush_interval -1
+	# disables response buffering explicitly rather than relying on Caddy's
+	# content-type heuristic, and this path is deliberately outside `encode`.
+	handle /api/search/stream {
+		reverse_proxy {$API_URL} {
+			flush_interval -1
+		}
+	}
 
 	handle /api/* {
 		reverse_proxy {$API_URL}
@@ -14,6 +21,7 @@
 	# Everything else is the SPA. try_files sends unknown paths to index.html;
 	# it sits inside `handle` so it can never swallow an /api request.
 	handle {
+		encode gzip
 		root * /srv
 		try_files {path} /index.html
 		file_server

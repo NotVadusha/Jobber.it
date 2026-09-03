@@ -710,6 +710,17 @@
         "title": "RankingEvidence",
         "type": "object"
       },
+      "RankingStage": {
+        "enum": [
+          "rewrite",
+          "filter",
+          "retrieve",
+          "group",
+          "rerank"
+        ],
+        "title": "RankingStage",
+        "type": "string"
+      },
       "RemoteFilter": {
         "enum": [
           "remote",
@@ -765,6 +776,80 @@
         "title": "ResponseMeta",
         "type": "object"
       },
+      "SearchCompleted": {
+        "additionalProperties": false,
+        "properties": {
+          "event": {
+            "const": "search.completed",
+            "default": "search.completed",
+            "title": "Event",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/BestMatchData"
+          },
+          "took_ms": {
+            "minimum": 0.0,
+            "title": "Took Ms",
+            "type": "number"
+          }
+        },
+        "required": [
+          "request_id",
+          "snapshot",
+          "took_ms"
+        ],
+        "title": "SearchCompleted",
+        "type": "object"
+      },
+      "SearchFailed": {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBody"
+          },
+          "event": {
+            "const": "search.failed",
+            "default": "search.failed",
+            "title": "Event",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "error"
+        ],
+        "title": "SearchFailed",
+        "type": "object"
+      },
+      "SearchStarted": {
+        "additionalProperties": false,
+        "properties": {
+          "event": {
+            "const": "search.started",
+            "default": "search.started",
+            "title": "Event",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id"
+        ],
+        "title": "SearchStarted",
+        "type": "object"
+      },
       "SeniorityFilter": {
         "enum": [
           "intern",
@@ -808,6 +893,89 @@
         ],
         "title": "SourceId",
         "type": "string"
+      },
+      "StageCompleted": {
+        "additionalProperties": false,
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "duration_ms": {
+            "minimum": 0.0,
+            "title": "Duration Ms",
+            "type": "number"
+          },
+          "event": {
+            "const": "stage.completed",
+            "default": "stage.completed",
+            "title": "Event",
+            "type": "string"
+          },
+          "item_count": {
+            "minimum": 0.0,
+            "title": "Item Count",
+            "type": "integer"
+          },
+          "ordinal": {
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Ordinal",
+            "type": "integer"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/RankingStage"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TraceStatus"
+          }
+        },
+        "required": [
+          "request_id",
+          "stage",
+          "ordinal",
+          "status",
+          "detail",
+          "item_count",
+          "duration_ms"
+        ],
+        "title": "StageCompleted",
+        "type": "object"
+      },
+      "StageStarted": {
+        "additionalProperties": false,
+        "properties": {
+          "event": {
+            "const": "stage.started",
+            "default": "stage.started",
+            "title": "Event",
+            "type": "string"
+          },
+          "ordinal": {
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Ordinal",
+            "type": "integer"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/RankingStage"
+          }
+        },
+        "required": [
+          "request_id",
+          "stage",
+          "ordinal"
+        ],
+        "title": "StageStarted",
+        "type": "object"
       },
       "SuccessResponse_BestMatchData_": {
         "additionalProperties": false,
@@ -868,35 +1036,21 @@
         "additionalProperties": false,
         "properties": {
           "count": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Count"
+            "minimum": 0.0,
+            "title": "Count",
+            "type": "integer"
           },
           "detail": {
             "title": "Detail",
             "type": "string"
           },
           "duration_ms": {
-            "anyOf": [
-              {
-                "minimum": 0.0,
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Duration Ms"
+            "minimum": 0.0,
+            "title": "Duration Ms",
+            "type": "number"
           },
           "node": {
-            "title": "Node",
-            "type": "string"
+            "$ref": "#/components/schemas/RankingStage"
           },
           "status": {
             "$ref": "#/components/schemas/TraceStatus"
@@ -905,7 +1059,9 @@
         "required": [
           "node",
           "status",
-          "detail"
+          "detail",
+          "count",
+          "duration_ms"
         ],
         "title": "TraceNode",
         "type": "object"
@@ -1109,6 +1265,113 @@
           }
         },
         "summary": "Search"
+      }
+    },
+    "/api/search/stream": {
+      "post": {
+        "operationId": "search_stream_api_search_stream_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BestMatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "text/event-stream": {
+                "itemSchema": {
+                  "properties": {
+                    "data": {
+                      "contentMediaType": "application/json",
+                      "contentSchema": {
+                        "discriminator": {
+                          "mapping": {
+                            "search.completed": "#/components/schemas/SearchCompleted",
+                            "search.failed": "#/components/schemas/SearchFailed",
+                            "search.started": "#/components/schemas/SearchStarted",
+                            "stage.completed": "#/components/schemas/StageCompleted",
+                            "stage.started": "#/components/schemas/StageStarted"
+                          },
+                          "propertyName": "event"
+                        },
+                        "oneOf": [
+                          {
+                            "$ref": "#/components/schemas/SearchStarted"
+                          },
+                          {
+                            "$ref": "#/components/schemas/StageStarted"
+                          },
+                          {
+                            "$ref": "#/components/schemas/StageCompleted"
+                          },
+                          {
+                            "$ref": "#/components/schemas/SearchCompleted"
+                          },
+                          {
+                            "$ref": "#/components/schemas/SearchFailed"
+                          }
+                        ],
+                        "title": "Streamitem Search Stream Api Search Stream Post"
+                      },
+                      "type": "string"
+                    },
+                    "event": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "retry": {
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error envelope"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error envelope"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error envelope"
+          }
+        },
+        "summary": "Search Stream"
       }
     }
   }
