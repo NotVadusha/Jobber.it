@@ -29,10 +29,11 @@ export type SearchFormProps = {
   onSubmit: () => void
 }
 
-// Plan 2 owns reusable UI extraction; these stay feature-local until then.
+// Label stays feature-local until it has real callers outside search (see the
+// "three real callers" rule for promoting a component to src/ui).
 export function Label({ children }: { children: ReactNode }) {
   return (
-    <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted">{children}</span>
+    <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-secondary">{children}</span>
   )
 }
 
@@ -48,8 +49,8 @@ function Toggle({ on, onClick, children }: {
       onClick={onClick}
       className={`border px-2.5 py-1 font-mono text-xs transition-colors ${
         on
-          ? 'border-lex bg-lex/10 text-lex'
-          : 'border-line text-muted hover:border-edge hover:text-paper'
+          ? 'border-accent bg-accent/10 text-accent-text'
+          : 'border-subtle text-secondary hover:border-strong hover:text-primary'
       }`}
     >
       {children}
@@ -65,7 +66,7 @@ function NumberField({ label, value, onChange, placeholder }: {
 }) {
   return (
     <label className="flex items-center gap-2">
-      <span className="font-mono text-xs text-muted">{label}</span>
+      <span className="font-mono text-xs text-secondary">{label}</span>
       <input
         type="number"
         inputMode="numeric"
@@ -73,8 +74,8 @@ function NumberField({ label, value, onChange, placeholder }: {
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="w-24 border border-line bg-transparent px-2 py-1 font-mono text-xs text-paper
-                   placeholder:text-muted/60 hover:border-edge focus:border-lex focus:outline-none"
+        className="w-24 border border-subtle bg-transparent px-2 py-1 font-mono text-xs text-primary
+                   placeholder:text-tertiary/60 hover:border-strong focus:border-accent focus:outline-none"
       />
     </label>
   )
@@ -105,8 +106,8 @@ export function SearchForm({
       }}
     >
       <label htmlFor="q" className="sr-only">Query</label>
-      <div className="flex items-center gap-3 border-b-2 border-edge py-3 transition-colors focus-within:border-lex">
-        <span aria-hidden="true" className="font-mono text-lg text-lex">›</span>
+      <div className="flex items-center gap-3 border-b-2 border-strong py-3 transition-colors focus-within:border-accent">
+        <span aria-hidden="true" className="font-mono text-lg text-accent">›</span>
         <input
           id="q"
           value={query}
@@ -116,13 +117,13 @@ export function SearchForm({
             onQueryChange(event.currentTarget.value.slice(0, QUERY_MAX_LENGTH))
           }
           placeholder="node.js kafka kubernetes"
-          className="min-w-0 flex-1 bg-transparent font-mono text-lg outline-none placeholder:text-muted/50 sm:text-xl"
+          className="min-w-0 flex-1 bg-transparent font-mono text-lg outline-none placeholder:text-tertiary/50 sm:text-xl"
         />
         <button
           type="submit"
           disabled={busy || (!query.trim() && !profile)}
-          className="shrink-0 bg-lex px-4 py-2 font-mono text-xs font-semibold uppercase tracking-[0.14em]
-                     text-ink transition-opacity hover:opacity-85 disabled:opacity-50"
+          className="shrink-0 bg-accent px-4 py-2 font-mono text-xs font-semibold uppercase tracking-[0.14em]
+                     text-accent-ink transition-opacity hover:opacity-85 disabled:opacity-50"
         >
           {busy ? 'Searching' : 'Search'}
         </button>
@@ -145,8 +146,8 @@ export function SearchForm({
             onChange={(event) =>
               onSeniorityChange(event.currentTarget.value as SeniorityFilter | '')
             }
-            className="border border-line bg-transparent px-2 py-1 font-mono text-xs text-paper
-                       hover:border-edge focus:border-lex focus:outline-none"
+            className="border border-subtle bg-transparent px-2 py-1 font-mono text-xs text-primary
+                       hover:border-strong focus:border-accent focus:outline-none"
           >
             <option value="">any</option>
             {SENIORITY.map((value) => (
@@ -171,7 +172,7 @@ export function SearchForm({
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <Label>Profile</Label>
-        <label className="cursor-pointer border border-dashed border-line px-3 py-1.5 font-mono text-xs text-muted transition-colors hover:border-edge hover:text-paper">
+        <label className="cursor-pointer border border-dashed border-subtle px-3 py-1.5 font-mono text-xs text-secondary transition-colors hover:border-strong hover:text-primary">
           <input
             type="file"
             accept=".txt,.md,.pdf,text/plain,text/markdown,application/pdf"
@@ -184,12 +185,12 @@ export function SearchForm({
           <button
             type="button"
             onClick={onProfileRemove}
-            className="font-mono text-xs text-muted underline underline-offset-4 hover:text-paper"
+            className="font-mono text-xs text-secondary underline underline-offset-4 hover:text-primary"
           >
             Remove
           </button>
         )}
-        <span className="font-mono text-[11px] text-muted">
+        <span className="font-mono text-[11px] text-tertiary">
           read in your browser · stage 3 compresses it into a requirements block before search
         </span>
       </div>

@@ -1,14 +1,14 @@
 # Plan 2 — Design System and Application Shell
 
-**Status:** Draft for approval
+**Status:** Implemented — computer-use acceptance complete
 
 **Parent:** [Release 1 Master Plan](./release-1-master-plan.md)
 
 **Depends on:** [Plan 1 — Architecture and Contracts](./01-architecture-and-contracts.md)
 
-**Last updated:** 2026-09-02
+**Last updated:** 2026-09-03
 
-**Implementation status:** Not started
+**Implementation status:** Complete. All six tasks landed on `release-1.0.0-design-system-implementation`; see Section 21 for final verification evidence.
 
 ## 1. Objective
 
@@ -1281,13 +1281,115 @@ Plan 2 is complete only when:
 
 ## 20. Review Checklist
 
-- [ ] Does the theme apply before the first visible paint?
-- [ ] Does an explicit choice persist without converting the OS default into a stored choice?
-- [ ] Are every color and effect expressed through semantic tokens?
-- [ ] Are old token names and IBM font dependencies deleted?
-- [ ] Does the shell know nothing about route parsing or feature types?
-- [ ] Are only implemented destinations rendered?
-- [ ] Are shared feedback modules deep enough to remove duplicated timer/ARIA/state logic from later callers?
-- [ ] Is the UI surface still limited to the five declared modules?
-- [ ] Do keyboard, contrast, responsive, zoom, and reduced-motion checks pass in both themes?
-- [ ] Do all focused and full verification commands pass?
+- [x] Does the theme apply before the first visible paint? Yes — `index.html`'s pre-paint script sets `data-theme` synchronously before any stylesheet/module script; verified in both Playwright and live computer-use hard-reload checks.
+- [x] Does an explicit choice persist without converting the OS default into a stored choice? Yes — `theme.tsx` only persists on explicit `toggleTheme()`; system-derived state is never written to storage.
+- [x] Are every color and effect expressed through semantic tokens? Yes — the stale-token scans in Section 21 return zero matches for old vocabulary.
+- [x] Are old token names and IBM font dependencies deleted? Yes — confirmed by scan and by network-panel inspection (fonts served only from local `@fontsource` packages).
+- [x] Does the shell know nothing about route parsing or feature types? Yes — `AppShell.tsx` takes only `homeHref`/`navigation`/`footerGroups`/`corpusSummary` props; `App.tsx` is the only caller and passes `navigation={[]} footerGroups={[]}` since no other screens exist yet.
+- [x] Are only implemented destinations rendered? Yes — trivially true today (no nav/footer links rendered at all); the shell's real-link contract is enforced by Playwright (`shell emits only real links and one active link`, `empty navigation and footer groups render no dead chrome`).
+- [x] Are shared feedback modules deep enough to remove duplicated timer/ARIA/state logic from later callers? Yes per design (toast/PageState/Skeleton each own their timer/ARIA/state internals); no second caller exists yet to prove reuse in practice.
+- [x] Is the UI surface still limited to the five declared modules? Yes — `src/ui/` contains only `theme.tsx`, `AppShell.tsx`, `toast.tsx`, `PageState.tsx`, `Skeleton.tsx`.
+- [x] Do keyboard, contrast, responsive, zoom, and reduced-motion checks pass in both themes? Yes for keyboard/contrast/responsive/zoom, verified live in Section 21. Reduced-motion is verified by the automated Playwright suite only — this browser pane's tooling has no live `prefers-reduced-motion` emulation control (see Section 21's disclosed limitations).
+- [x] Do all focused and full verification commands pass? Yes — `make verify-full` is green end to end; see Section 21.
+
+## 21. Task 6 Final Verification Evidence (2026-09-03)
+
+This section is the implementation handoff required by Section 14 and the Definition of Done. It records what was actually run and observed for Task 6, the last task in this plan.
+
+### 21.1 Import boundary enforcement (Checkpoint D)
+
+`apps/frontend/.oxlintrc.json` gained a `src/ui/**` override rejecting `@/app/**`, `@/features/**`, `@/api/**`, matching the pattern already used for `src/api/**`, `src/lib/**`, and `src/features/**`.
+
+Proof cycle:
+1. Added a temporary unused import `import { SearchPage } from '@/features/search/SearchPage'` to `src/ui/AppShell.tsx`.
+2. `npm --prefix apps/frontend run lint` — **failed**, exit code 1:
+   ```
+   src/ui/AppShell.tsx:10:1: error eslint(no-restricted-imports): '@/features/search/SearchPage' import is restricted from being used by a pattern. help: ui foundation modules are product-agnostic and never import app, features, or API code.
+   ```
+3. Removed the temporary import.
+4. `npm --prefix apps/frontend run lint` — **passed**, exit code 0 (only the same pre-existing `only-export-components`/`exhaustive-deps` warnings from Tasks 1–5 remain; no new errors).
+
+### 21.2 `make verify-full` (Checkpoint E)
+
+Ran from the repo root, full chain (`verify-full` → `verify build` → `check test e2e build` + openapi smoke test). Result: **exit 0, fully green.**
+
+- `check`: `oxlint` clean (warnings only), `tsc --noEmit` clean, `lint-imports` — Contracts: 2 kept, 0 broken.
+- `test`: backend pytest 61 passed, cron pytest 70 passed, mcp pytest 15 passed (146 total, 0 failed).
+- `e2e`: Playwright — 26 passed (16 in `design-system-shell.spec.ts` + 10 in `architecture-contracts.spec.ts`), 0 failed. The `/api/meta` ECONNREFUSED/502 noise in the log is expected — no backend server runs in this environment (pre-existing since Task 5); the frontend's mocked/offline-state handling is exactly what the suite exercises.
+- `build`: `tsc --noEmit && vite build` succeeded, fonts and assets emitted correctly.
+- Final backend openapi smoke test (`app.openapi()`) succeeded.
+
+Stale-value scans (Section 18.11), all three return **zero matches**:
+```
+rg -n 'IBM Plex|ibm-plex|color-ink|color-panel|color-line|color-edge|color-paper|color-muted|color-lex|color-sem' apps/frontend/src apps/frontend/package.json
+rg -n '(bg|text|border)-(ink|panel|line|edge|paper|muted|lex|sem)(/|\b)' apps/frontend/src
+rg -n 'fonts\.googleapis|fonts\.gstatic' apps/frontend
+```
+
+`git diff --check` and `git status --short` were run as part of the close-out; no whitespace errors, and status was reviewed before committing.
+
+All 14 Playwright test titles required by Section 14 were confirmed present in `apps/frontend/e2e/design-system-shell.spec.ts` (16 total — two extra cases from earlier tasks: mobile-menu-breakpoint visibility and empty-nav/footer rendering — are additive, not substitutes).
+
+### 21.3 Computer-use verification (Section 16 checklist)
+
+Performed live in the Claude Browser pane against the Vite dev server (`http://localhost:5173`) and, for the production-preview bullet, against `vite preview` (`http://localhost:4173`). No backend server was available in this environment (expected/pre-existing per Task 5); search/meta requests were exercised against that failure state rather than live data.
+
+**Theme — all verified live:**
+- Cleared `jobber.theme.v1`, OS dark, hard reload → first paint `data-theme="dark" data-theme-source="system"`. Confirmed.
+- Cleared storage, OS light, hard reload → first paint `data-theme="light" data-theme-source="system"`. Confirmed.
+- Toggled light→dark, reloaded → `dark`/`stored` persisted; toggle button's accessible name flipped from "Switch to dark theme" to "Switch to light theme" and back correctly.
+- With an explicit stored choice, changed emulated OS scheme → theme did **not** change (stayed `dark`/`stored` while OS emulation was `light`). Confirmed page does not override an explicit choice.
+- **Not verifiable live**: "with no explicit choice, change OS theme while the page is open → page follows." This browser pane's `resize_window` colorScheme emulation updates `matchMedia().matches` but does not dispatch the `change` event on the `MediaQueryList` (confirmed by attaching a bare listener directly — zero events fired even though `matches` flipped). This is a tooling limitation, not an app defect: `ThemeProvider` correctly uses `media.addEventListener('change', onChange)`, and the automated Playwright test `system theme changes apply until the user chooses explicitly` (which uses Playwright's own `page.emulateMedia`, which does fire the event) passed in `make verify-full`.
+- **Not verifiable live**: "block local storage in browser settings" — this tool has no control to block storage access before the pre-paint script runs (no init-script hook). Covered by the automated `invalid and inaccessible storage fall back safely` test, which passed.
+
+**Shell and responsive — all verified live:**
+- Checked 320, 375, 640, 768, 1024, and 1440 CSS px: `document.documentElement.scrollWidth <= window.innerWidth` true at every width; no horizontal scrollbar at 320; screenshots confirm no layout collision at any width.
+- Skip link ("Skip to content") is the first Tab stop, hidden until focus, then visible with a clear accent-colored ring targeting `#main-content`.
+- The live app (`App.tsx`) currently passes `navigation={[]} footerGroups={[]}` (only the search screen exists), so no nav links or mobile menu button render in the live app today — this is correct per the plan's "only real destinations" rule, not a gap. The mobile-menu keyboard/pointer/Escape/outside-press behavior is exercised by the Playwright suite via its fixture harness (which supplies mock nav items) and passed; it could not be operated manually in the live app because there is nothing to open a menu for yet.
+
+**Accessibility and motion:**
+- Tab order confirmed: skip link → logo → theme toggle → main content (source order, header before main).
+- Focus indicator verified visible in both themes: light theme shows a solid 2px outline in `rgb(178, 98, 5)` (light `--theme-accent`) on the toggle button when reached by keyboard; same button shows `outline: none` on mouse click (correct `:focus-visible` behavior) and a solid 2px accent ring again on keyboard Tab. Dark theme's toggle likewise shows the accent-colored ring on keyboard focus.
+- 200% zoom was approximated by halving the viewport to 720×450 (this tool has no true browser-zoom control) — header and search form remained fully operable and unclipped at that effective width.
+- Reduced motion: **not independently verified live** — this tool exposes no `prefers-reduced-motion` emulation control (only light/dark `colorScheme`). Confirmed the `@media (prefers-reduced-motion: reduce)` rule is present in the loaded stylesheet; the actual behavior is covered by the automated Playwright test `reduced motion disables nonessential transition and animation`, which passed.
+- Screen-reader smoke (approximated via accessibility tree / DOM inspection, no audio AT available):
+  - Theme toggle's accessible name (`aria-label`) changes correctly with state, confirmed above.
+  - Toast: triggered "Profile removed" via a real feature action (attached then removed a CV file), confirmed markup `role="status" aria-live="polite" aria-atomic="true"` — one polite live region, as required.
+  - Error state: an empty-storage search against the unreachable backend produced a rendered `role="alert"` element with text "The server returned an unreadable error." — one appropriate announcement.
+  - Mobile menu's `aria-expanded` toggling was not directly observable live (no nav items in the current app, see above); covered by the passing Playwright suite.
+
+**Fonts/build — all verified live:**
+- Network panel inspected: every font request resolves to `localhost:5173/node_modules/@fontsource/inter/*` and `.../@fontsource/jetbrains-mono/*`. Zero requests to `fonts.googleapis.com`, `fonts.gstatic.com`, or any other font CDN.
+- Production preview (`vite preview` on port 4173) loads correctly: theme applies (`data-theme="light"`), `font-family: Inter, ui-sans-serif, system-ui, sans-serif` computed on `body`, header/main/footer all render.
+- Fallback-font readability (disabling custom fonts) was not separately re-tested live in this pass; the `--font-app-sans`/`--font-app-mono` stacks both declare system fallbacks (`ui-sans-serif, system-ui, sans-serif` / `ui-monospace, SFMono-Regular, Menlo, monospace`) per Section 18.5, unchanged since Task 2.
+
+Both themes were also confirmed to expose all 19 required `--theme-*` custom properties via `getComputedStyle(document.documentElement)` with zero missing (matching the automated token-contrast test).
+
+### 21.4 Known open items carried forward (not resolved by this task, by design)
+
+Per the SDD ledger (`.superpowers/sdd/02-design-system-and-application-shell/progress.md`) and this task's explicit instructions, the following two items remain open, accepted follow-ups — they are product/scope decisions for a later task or plan owner, not defects introduced or left unfixed by Task 6:
+
+1. **Error-alert color (Task 3).** `PageState.tsx`'s error kind still uses the accent color family (`border-accent/50 bg-accent/5`, and — after the fix wave below — `text-accent-text`) rather than the `danger` token, a consequence of Task 3's mechanical `lex→accent` class-rename scope. (Corrected file reference: this class string lives in `src/ui/PageState.tsx`, not `SearchPage.tsx` — `SearchPage.tsx` only renders a `<PageState kind="error">` element and carries no color classes of its own.) Visually confirmed live in Task 6's computer-use pass (the "server returned an unreadable error" alert renders in the amber/accent color, not red/danger). This remains an **open product decision**: the 2026-09-03 fix wave (Section 21.5) did not resolve accent-vs-danger — it only corrected the specific text-contrast *shade* within the accent family (`text-accent` → `text-accent-text`), a separate and uncontroversial correctness fix that leaves the underlying color-family question untouched. Revisit when a later plan or product owner makes an explicit error-state color decision.
+2. **Corpus-meta data has no renderer (Task 4).** `architecture-contracts.spec.ts`'s meta-normalization test lost field-level assertion coverage when the header text it used to assert against was removed in Task 4's mandated scope; it now only checks that `/api/meta` completes without a rendered error. The real issue underneath, identified by the 2026-09-03 whole-branch review: corpus-meta data (`useCorpusMetaQuery()`'s `meta`) has had **zero renderers** in the shipped app since that removal — nothing on screen displays it. This was not merely a test getting weaker; until the 2026-09-03 fix wave (Section 21.5, finding 4), `SearchPage.tsx` still routed `metaQuery.error` into the visible error alert, so a failing `/api/meta` request surfaced a user-facing error about a resource the page never shows. The fix wave stopped routing that error into the alert while keeping the `useCorpusMetaQuery()` call itself (so this test still has a request to observe). Real field-level test coverage returns naturally once a later plan gives corpus metadata a rendered owner again.
+
+No prohibited substitution from Section 18.14 was found in a spot-check of the current tree (no third theme value, no OS-derived theme persisted before user choice, no font CDN, no added UI/toast/icon libraries, no Storybook, no route logic in `AppShell`).
+
+### 21.5 Final whole-branch review fix wave (2026-09-03)
+
+A final whole-branch review of this completed plan (post-merge, on `release-1.0.0-design-system-implementation`) found five Important-severity issues and three Minor-severity issues. All eight were fixed in this fix wave; none required a product/scope decision beyond what is recorded here, except where noted above (ledger item 1, still open).
+
+**Important:**
+
+1. **`--theme-accent-text` had zero callers; readable text using `text-accent` failed light-theme contrast** (4.07:1, below the 4.5:1 text target — `--theme-accent-text` measures 6.12:1 and passes). Seven call sites changed from `text-accent` to `text-accent-text`: `src/ui/PageState.tsx` (error-kind text), `src/ui/AppShell.tsx` (desktop and mobile active-nav-link text; the logo mark's decorative accent-colored period was deliberately left alone), `src/features/search/SearchTrace.tsx` (trace-node count, term chips), `src/features/search/SearchForm.tsx` (active remote/hybrid/onsite toggle text), `src/features/search/SearchResults.tsx` (job-title link hover state). All `bg-accent`/`border-accent` fill and border usages were left untouched — those are governed by the 3:1 non-text floor, not the 4.5:1 text target. Extended the `'both themes expose complete readable semantic tokens'` Playwright test in `e2e/design-system-shell.spec.ts` to assert `--theme-accent` (the fill/border token) at the 3:1 floor only, and `--theme-text-tertiary` at the same 3:1 floor (see item 3).
+2. **Section 14's mandated responsive assertions were missing.** Added `'no horizontal overflow and focused content clears the sticky header across required widths'` to `e2e/design-system-shell.spec.ts`, covering all four required viewports (320/768/1024/1440): asserts `document.documentElement.scrollWidth <= window.innerWidth` and that a focused element inside the search form clears the sticky header's bounding box.
+3. **`text-tertiary` on meaningful data values regressed contrast.** `--theme-text-tertiary` measures 3.71:1 light / 4.43:1 dark — below the 4.5:1 text target, acceptable only for genuinely supplemental copy per Section 11's contrast contract. `src/features/search/SearchResults.tsx`'s rank-index number and relevance-score value (load-bearing data, not supplemental) changed from `text-tertiary` to `text-secondary`. No other `text-tertiary` usage in that file or elsewhere was touched.
+4. **`useCorpusMetaQuery()`'s error surfaced a user-facing alert for data nothing renders.** See ledger item 2 above for the full account. `src/features/search/SearchPage.tsx`'s `error` derivation no longer includes `metaQuery.error`; the `useCorpusMetaQuery()` call itself was kept (now uncaptured, since its return value is otherwise unused) so `architecture-contracts.spec.ts`'s meta-normalization test still has a request to observe. That test was re-run and still passes.
+5. **`AppShell` was missing two Section 11 responsive rules.** (a) Corpus summary is now `hidden lg:inline` (hidden below 64rem, visible from 64rem up) — no live visual effect today since `App.tsx` passes no `corpusSummary` prop; a forward-looking correctness fix for when a later plan wires real corpus data through. (b) Header, mobile-menu nav, and footer horizontal padding changed from flat `px-6` to `px-4 md:px-6` (1rem below 768px, 1.5rem from 768px up), matching the file's existing `md:hidden`/`hidden md:block` breakpoint convention.
+
+**Minor:**
+
+6. `src/ui/toast.tsx`'s toast surface changed from the arbitrary value `shadow-[var(--theme-shadow)]` to the `shadow-elevated` utility that `tokens.css`'s `@theme inline` block already defines for this purpose.
+7. `src/features/search/SearchForm.tsx`'s stale `// Plan 2 owns reusable UI extraction; these stay feature-local until then.` comment (Plan 2 is this plan, now complete and merged) was replaced with a comment stating the actual current rule: `Label` stays feature-local until it has real callers outside the search feature.
+8. `src/ui/toast.tsx`'s `normalizeToast` threw unconditionally on an empty/whitespace message; per Section 10.1's "rejected with a development error" contract this is now guarded behind `import.meta.env.DEV`. Production fallback: `normalizeToast` returns `null` and `showToast` silently no-ops (no toast shown, no throw) — chosen because it keeps the calling code simplest and an empty toast message is a caller bug, not something a production user needs surfaced. All current tests run against the Vite dev server (`import.meta.env.DEV` true), so the throw path is unchanged in tests.
+
+Verification after the fix wave: `npm --prefix apps/frontend run typecheck`, `lint`, `e2e` (27 passed, 0 failed — 26 pre-existing plus the one new Section 14 test), and `build` all passed. See the fix-wave report (`.superpowers/sdd/02-design-system-and-application-shell/fixwave-report.md`) for exact command output and file:line detail.
