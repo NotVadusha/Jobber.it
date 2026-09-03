@@ -74,6 +74,28 @@
       }
     },
     {
+      "files": ["src/app/**"],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    },
+    {
+      "files": ["src/routing/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/app/**", "@/features/**", "@/ui/**"],
+                "message": "Routing modules are below the app, features, and UI layers."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "files": ["src/ui/**"],
       "rules": {
         "no-restricted-imports": [
