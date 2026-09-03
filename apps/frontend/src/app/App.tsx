@@ -1,10 +1,18 @@
+import { buildFooterGroups, buildShellNavigation } from '@/app/navigation'
+import { ACTIVE_ROUTE_NAMES, RouteOutlet } from '@/app/routes'
+import { useHashRoute } from '@/routing/hash-router'
 import { AppShell } from '@/ui/shell/AppShell'
-import { SearchPage } from '@/features/search/SearchPage'
 
 export default function App() {
+  const { route } = useHashRoute(ACTIVE_ROUTE_NAMES)
+
   return (
-    <AppShell homeHref="#/" navigation={[]} footerGroups={[]}>
-      <SearchPage />
+    <AppShell
+      homeHref="#/jobs"
+      navigation={buildShellNavigation(route, ACTIVE_ROUTE_NAMES)}
+      footerGroups={buildFooterGroups(ACTIVE_ROUTE_NAMES)}
+    >
+      <RouteOutlet route={route} />
     </AppShell>
   )
 }
