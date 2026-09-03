@@ -8,9 +8,9 @@
 
 **Consumed by:** Plan 5 — All-Postings Experience; Plan 8 — Job Details and Saved Jobs; Plan 6 — Best-Match Ranking Backend
 
-**Last updated:** 2026-09-02
+**Last updated:** 2026-09-03
 
-**Implementation status:** Code complete; live-database/E2E/computer-use evidence in Section 19.14 still pending
+**Implementation status:** Code complete; all local/E2E/computer-use evidence gathered (Section 19.14). Two production-scale rows (query-plan confirmation on representative data volume, migration timing on a production-sized staging copy) remain outstanding — they require an actual production-sized database, which this environment does not have.
 
 ## 1. Objective
 
@@ -2559,26 +2559,26 @@ Fill this table during implementation; do not replace evidence with “done”:
 
 | Evidence | Command or action | Result | Artifact/reference |
 |---|---|---|---|
-| Baseline | `make verify-full` before edits | Pending | Pending |
-| Migration cycle | upgrade → downgrade → upgrade → check | Pending | Pending |
-| Schema inspection | generated column + three index definitions | Pending | Pending |
-| Contract | `make api-contracts-check` | Pending | Pending |
-| Frontend static checks | lint + typecheck + import lint | Pending | Pending |
-| Catalogue E2E | `make e2e` twice | Pending | Pending |
-| Full repository | `make verify-full` | Pending | Pending |
-| Query plans | three staging EXPLAIN outputs | Pending | Pending |
-| Request latency | 5 warm-up + 50 measured calls | Pending | Pending |
-| Migration timing | production-sized staging `0003` | Pending | Pending |
-| Privacy | unique sentinel absent from structured logs | Pending | Pending |
-| Visible browser | successful Swagger catalogue/meta journeys | Pending | Pending |
-| Failure browser | closed-port safe 503 | Pending | Pending |
-| Rollback | app rollback + downgrade + re-upgrade | Pending | Pending |
+| Baseline | `make verify-full` before edits | Pass (code changes then applied on top) | Local run, 2026-09-03 |
+| Migration cycle | upgrade → downgrade → upgrade → check on a disposable `postgres:16` container (`jobber_e2e`) | Pass — `alembic check` reported "No new upgrade operations detected" | Local run, 2026-09-03 |
+| Schema inspection | generated column + three index definitions | Pass — `search_document` is `ALWAYS` generated with the exact expression; `postings_live_search`/`_newest`/`_salary` all present with `WHERE (delisted_at IS NULL)`; `jobber_stack_text` is `text[]`, volatility `i`, parallel `s` | Local run, 2026-09-03 |
+| Contract | `make api-contracts-check` | Pass (clean diff after `make api-contracts`) | Local run, 2026-09-03 |
+| Frontend static checks | lint + typecheck + import lint | Pass (`npm run lint`, `npm run typecheck`, `lint-imports`) | Local run, 2026-09-03 |
+| Catalogue E2E | `make e2e` twice (fixture reloaded between runs) | Pass — 12/12 catalogue specs both times, plus all 71 suite specs (fixed 4 pre-existing `routing-shareable-state.spec.ts` assertions that hardcoded the old `:5173` port now that Plan 4 isolates E2E on `:5174`) | Local run, 2026-09-03 |
+| Full repository | `make verify-full` | Pass, exit 0 | Local run, 2026-09-03 |
+| Query plans | three fixture-scale EXPLAIN outputs | Ran against the 45-row E2E fixture only — planner used `postings_live_newest`/`postings_live_search` for the newest and lexical+filter recipes, a `Seq Scan` for the salary recipe (expected at this row count). **No production-sized staging copy exists in this environment; production-plan evidence is not available and is not fabricated here.** | Local run, 2026-09-03 |
+| Request latency | 5 warm-up + 50 measured calls | Not run — requires the same production-sized staging copy as above; skipped rather than measured against the tiny fixture, which would not be representative | Not available |
+| Migration timing | production-sized staging `0003` | Not run — no production-sized staging database available in this environment. The fixture-scale migration (45 rows) completed in well under a second, which is not evidence for the 30-second production gate | Not available |
+| Privacy | unique sentinel `PLAN4_QUERY_MUST_NOT_APPEAR_7f39c1` absent from structured logs | Pass — sentinel sent in `query`, absent from the captured log; SQL/description/requirements/responsibilities text also absent; one clean `request_completed` INFO event present | Local run, 2026-09-03, `/tmp/plan4-privacy.log` |
+| Visible browser | successful Swagger catalogue/meta journeys | Pass — all 8 steps of Section 19.11.4 performed live through the rendered Swagger UI (empty query → 20 items/44 total/`lever:e2e-45` first; `salarybeacon`+salary sort → `greenhouse:e2e-43` first, no score field; `stackbeacon`+excluding remote filter → empty/0; `/api/meta` → source counts sum to 44) | Local run, 2026-09-03 |
+| Failure browser | closed-port safe 503 | Pass — backend against a closed PostgreSQL port returned `503 CATALOGUE_UNAVAILABLE` with matching `X-Request-ID` and `Cache-Control: no-store`; log contained only the safe `catalogue_unavailable` WARN event, no host/port/db/SQL/sentinel | Local run, 2026-09-03, `/tmp/plan4-unavailable.log` |
+| Rollback | app rollback + downgrade + re-upgrade | Pass — downgraded to `0002` (search column/indexes gone, all 45 rows intact); ran the pre-Plan-4 app (via a worktree at the parent commit) against the downgraded schema, `/api/meta` and `/api/search` both responded correctly; re-upgraded to `0003`, reseeded, reran the catalogue suite clean | Local run, 2026-09-03 |
 
-After every row passes, update the top of this document:
+Two rows (production-sized query-plan/latency confirmation and production-sized migration timing) require a production-sized staging database that does not exist in this environment and were not fabricated. Every other row passed against a real, disposable PostgreSQL 16 instance. Given that gap, this plan is **not** marked fully `Complete`; the top of this document instead reads:
 
 ```text
 Status: Approved
-Implementation status: Complete
+Implementation status: Code complete; all local/E2E/computer-use evidence gathered. Two production-scale rows (query-plan confirmation on representative data volume, migration timing on a production-sized staging copy) remain outstanding — require an actual production-sized database, which this environment does not have.
 ```
 
 Do not mark this plan complete merely because code was written or deterministic checks passed; operational and visible-browser evidence are part of the accepted scope.
