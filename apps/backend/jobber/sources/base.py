@@ -24,7 +24,6 @@ class RawPosting:
     extra: dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        # Every parser routes through here, html_to_text or not.
         self.description_text = _clean(self.description_text)
         self.title = _clean(self.title)
         self.company = _clean(self.company)
@@ -71,7 +70,7 @@ def boards(fetch, companies: list[str], url: str, params: dict | None = None):
     for slug in companies:
         try:
             yield slug, fetch.get_json(url.format(slug), params)
-        except Exception as e:  # noqa: BLE001 — the whole point is not caring which
+        except Exception as e:  # noqa: BLE001
             print(f"    {slug}: skipped ({type(e).__name__})", file=sys.stderr)
 
 
@@ -91,7 +90,6 @@ def html_to_text(raw: str | None) -> str:
     return re.sub(r"\n{3,}", "\n\n", text).strip()
 
 
-
 def _iso(value) -> str | None:
     """Epoch millis / seconds / ISO string -> ISO 8601. None if unparseable."""
     if value in (None, ""):
@@ -102,7 +100,7 @@ def _iso(value) -> str | None:
     try:
         return datetime.fromisoformat(str(value).replace("Z", "+00:00")).isoformat()
     except ValueError:
-        try:  # RFC 822, as used by RSS
+        try:
             return parsedate_to_datetime(str(value)).isoformat()
         except (TypeError, ValueError):
             return None

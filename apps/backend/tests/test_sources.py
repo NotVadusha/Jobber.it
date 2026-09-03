@@ -1,3 +1,4 @@
+import json
 import pathlib
 
 import pytest
@@ -18,8 +19,6 @@ class FakeFetcher:
         return self.text
 
     def get_json(self, url, params=None):
-        import json
-
         return json.loads(self.get(url, params))
 
 
@@ -59,7 +58,6 @@ def test_djinni_captures_structured_extras():
     assert first.url.startswith("https://djinni.co/jobs/")
     assert first.extra["meta_line"], "meta_line drives remote/experience/English parsing"
     assert any(p.extra.get("salary_text") for p in postings)
-    # Recovered from the tooltip, not the visible relative age ("4h").
     assert first.posted_at and first.posted_at.startswith("20")
 
 
@@ -91,9 +89,9 @@ def test_html_to_text_strips_scripts_and_keeps_blocks():
 @pytest.mark.parametrize(
     "raw,expected_prefix",
     [
-        (1755500000000, "2025-"),  # epoch millis (Lever)
-        ("2026-08-17T15:52:48.780Z", "2026-08-17"),  # ISO (Ashby/jobico)
-        ("Mon, 18 Aug 2026 10:00:00 +0300", "2026-08-18"),  # RFC 822 (DOU RSS)
+        (1755500000000, "2025-"),
+        ("2026-08-17T15:52:48.780Z", "2026-08-17"),
+        ("Mon, 18 Aug 2026 10:00:00 +0300", "2026-08-18"),
         ("not a date", None),
     ],
 )

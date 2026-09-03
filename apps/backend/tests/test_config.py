@@ -22,7 +22,6 @@ def test_missing_required_keys_name_all_of_them(monkeypatch):
 
 
 def test_empty_string_counts_as_unset(monkeypatch):
-    # .env.example ships `ANTHROPIC_API_KEY=`; dotenv loads that as "".
     with pytest.raises(SystemExit):
         build(monkeypatch, DATABASE_URL="postgres:///x", PINECONE_API_KEY="  ")
 
@@ -41,6 +40,5 @@ def test_other_provider_keys_stay_optional_and_checked_on_use(monkeypatch):
 
 
 def test_every_provider_env_key_is_a_config_field():
-    # A key Config does not know makes require() raise forever, set or not.
     for spec in PROVIDERS.values():
         assert spec.env_key.lower() in config.Config.model_fields

@@ -2,7 +2,7 @@ from jobber import router
 
 
 def test_clauses():
-    clauses, applied = router._clauses(router.Filters(remote_policy=["remote"], max_years=3))
+    clauses, applied = router.clauses(router.Filters(remote_policy=["remote"], max_years=3))
     assert clauses == [{"remote_policy": {"$in": ["remote"]}}, {"years_required": {"$lte": 3}}]
     assert [a["field"] for a in applied] == ["remote_policy", "max_years"]
 

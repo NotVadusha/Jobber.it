@@ -56,7 +56,7 @@ Two things deliberately stayed in the backend even though only prune calls them:
 - `Fetcher.probe()` — belongs with the HTTP client that owns the user agent and
   the rate limit.
 
-`db.py` cannot move at all: `router.py`, the always-on web service, depends on it.
+`db/` cannot move at all: `router.py` and the MCP server, both always-on, depend on it.
 
 This is the one app that cannot build from its own directory. `jobber-cron`
 path-depends on the sibling app:

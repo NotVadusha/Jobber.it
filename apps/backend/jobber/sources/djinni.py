@@ -66,7 +66,6 @@ def _card(card, keyword: str) -> RawPosting | None:
         extra={
             "keyword": keyword,
             "salary_text": text_of("span.text-success"),
-            # "Full Remote · Ukraine · 2 years of experience · English - B2 · ML"
             "meta_line": re.sub(r"\s+", " ", meta.text(separator=" ", strip=True)) if meta else None,
             "tags": [t.text(strip=True) for t in card.css("div.job-item__tags span.badge")],
         },

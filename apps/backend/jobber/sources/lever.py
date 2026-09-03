@@ -12,7 +12,6 @@ def lever(fetch: Fetcher, companies: list[str], **_) -> Iterator[RawPosting]:
     for slug, payload in boards(fetch, companies, url, {"mode": "json"}):
         for job in payload:
             cats = job.get("categories") or {}
-            # Lever splits a posting across description + repeated list blocks.
             parts = [job.get("descriptionPlain") or ""]
             parts += [
                 f"{lst.get('text', '')}\n{html_to_text(lst.get('content'))}"

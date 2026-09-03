@@ -11,8 +11,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from jobber import db, providers
 
-# Rows per flush. A slow provider takes hours over the whole corpus, so results
-# go down in increments rather than in one write at the end.
+from .. import boot, noargs
+
 CHECKPOINT = 100
 WORKERS = 8
 
@@ -97,8 +97,6 @@ def user_content(posting: dict) -> str:
 
 
 def _extract(posting: dict) -> tuple[dict, dict | None, str | None]:
-    # providers.DEFAULT, same as the search path: one default, one place to
-    # change it. Swapping the gather provider is an edit there, not a flag.
     try:
         extracted = providers.call(providers.DEFAULT, SYSTEM, user_content(posting), Extracted)
         return posting, extracted.model_dump(), None
@@ -189,14 +187,11 @@ def normalize() -> int:
     if scores:
         print(f"verbatim fidelity {sum(scores) / len(scores):.1%} over {len(scores)} postings")
     if errors:
-        # Left with normalized_at still null, so the next run retries them.
         print(f"{len(errors)} failed, e.g. {errors[:2]}", file=sys.stderr)
     return 0
 
 
 if __name__ == "__main__":
-    from .. import boot, noargs
-
     noargs("python -m jobber_cron.gather.normalize", __doc__)
     boot()
     raise SystemExit(normalize())

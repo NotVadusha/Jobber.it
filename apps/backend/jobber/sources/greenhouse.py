@@ -17,7 +17,6 @@ def greenhouse(fetch: Fetcher, companies: list[str], **_) -> Iterator[RawPosting
                 url=job.get("absolute_url", ""),
                 title=job.get("title", "").strip(),
                 company=job.get("company_name") or slug,
-                # Greenhouse double-escapes its HTML payload.
                 description_text=html_to_text(unescape(job.get("content") or "")),
                 location_raw=(job.get("location") or {}).get("name"),
                 posted_at=_iso(job.get("first_published") or job.get("updated_at")),

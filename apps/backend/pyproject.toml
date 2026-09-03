@@ -20,8 +20,12 @@ dependencies = [
 [project.scripts]
 jobber = "jobber.__main__:main"
 
+# SQLAlchemy and Alembic are dev-only on purpose: the models exist to generate
+# migrations, not to serve queries. Every runtime path is raw psycopg (jobber/db),
+# so no shipped image carries an ORM. Migrations run from a workstation against
+# the target DATABASE_URL — see the README's Database section.
 [dependency-groups]
-dev = ["pytest>=8"]
+dev = ["pytest>=8", "sqlalchemy>=2.0", "alembic>=1.13"]
 
 [build-system]
 requires = ["hatchling"]

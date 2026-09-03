@@ -7,7 +7,7 @@ from . import config
 
 
 def main() -> int:
-    load_dotenv()  # shell-exported vars win; CI/production can skip the file
+    load_dotenv()
     cfg = config.init()
     uvicorn.run("jobber.router:app", host=cfg.host, port=cfg.port)
     return 0

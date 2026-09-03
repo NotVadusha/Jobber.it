@@ -10,7 +10,6 @@ from .base import RawPosting, _iso, html_to_text
 
 def dou(fetch: Fetcher, categories: list[str], **_) -> Iterator[RawPosting]:
     """jobs.dou.ua RSS — full description inline, so no per-vacancy crawl."""
-    # "Title в Company, location" — greedy prefix so a title containing " в " survives.
     title_re = re.compile(r"^(.*) в ([^,]+)(?:,\s*(.*))?$")
     for category in categories:
         xml = fetch.get("https://jobs.dou.ua/vacancies/feeds/", {"category": category})

@@ -26,11 +26,15 @@ flowchart TB
     pipe["pipeline.run<br/>retrieve → rerank"]
   end
 
+  subgraph mcp["apps/mcp — MCP server, bearer-authenticated"]
+    tools["server.py<br/>search_jobs (paginated) · get_job"]
+  end
+
   subgraph fe["apps/frontend — Vite SPA"]
     ui["App.jsx<br/>query · filters · CV upload · trace"]
   end
 
-  pg[("Postgres<br/><b>postings</b> — scraped · extracted · state<br/><b>scrape_runs</b> — source, started_at, ok, count")]
+  pg[("Postgres<br/><b>postings</b> — scraped · extracted · state<br/><b>scrape_runs</b> — source, started_at, ok, count<br/><b>api_tokens</b> — sha256 digest, revoked_at")]
   pc[("Pinecone<br/><b>jobber-dense</b> + <b>jobber-sparse</b><br/>_id = posting_id#section")]
 
   boards --> scrape
@@ -48,11 +52,18 @@ flowchart TB
   pipe -->|hybrid + rerank| pc
   api -->|corpus size| pg
   api -.-> prov
+  tools -->|hybrid, no rerank| pc
+  tools -->|full posting · token check| pg
 ```
+
+An LLM client reaches the same corpus through `apps/mcp` rather than the SPA's
+endpoint. It skips both LLM-shaped steps the browser path needs: no query
+rewrite, because the caller already writes structured queries, and no reranker,
+because the caller reads every result and judges for itself.
 
 ## The model
 
-One table, `postings`, holds both the corpus and the pipeline's state — which is what makes the crons incremental instead of a nightly full rebuild. Schema in [db.py](apps/backend/jobber/db.py).
+One table, `postings`, holds both the corpus and the pipeline's state — which is what makes the crons incremental instead of a nightly full rebuild. Schema in [db/migrations/schema.py](apps/backend/jobber/db/migrations/schema.py); queries in [db/__init__.py](apps/backend/jobber/db/__init__.py).
 
 | Group | Columns |
 |---|---|
@@ -61,7 +72,7 @@ One table, `postings`, holds both the corpus and the pipeline's state — which 
 | extracted (LLM) | `seniority`, `years_required`, `remote_policy`, `location`, `salary_min`, `salary_max`, `stack[]`, `responsibilities_text`, `requirements_text` |
 | state | `normalized_at`, `indexed_at`, `first_seen_at`, `last_seen_at`, `delisted_at` |
 
-`scrape_runs` records every scrape attempt (`ok`, `count`, `started_at`); prune measures candidacy against a source's last *successful* run, so one bad night for a board cannot look like thousands of delistings. A Pinecone record is `posting_id#section` over up to three sections — `requirements`, `responsibilities`, `description` — with the scalars carried as metadata so a result card renders without a second lookup.
+`api_tokens` is the third table: one row per MCP credential, holding a sha256 digest and a nullable `revoked_at`. `scrape_runs` records every scrape attempt (`ok`, `count`, `started_at`); prune measures candidacy against a source's last *successful* run, so one bad night for a board cannot look like thousands of delistings. A Pinecone record is `posting_id#section` over up to three sections — `requirements`, `responsibilities`, `description` — with the scalars carried as metadata so a result card renders without a second lookup.
 
 `extra` also carries a `role` classified from the title ([sources/base.py](apps/backend/jobber/sources/base.py)), and `pending_normalize` requires it. That gate is what makes a wide board sweep affordable: an ATS board runs ~25% engineering, and the rest is roles the LLM would be paid to read.
 
@@ -71,13 +82,52 @@ Needs uv, Node 22, a Postgres URL and a Pinecone key.
 
 ```bash
 cp .env.example .env    # DATABASE_URL, PINECONE_API_KEY, and the key for providers.DEFAULT
-make install            # uv sync both python apps + npm ci
-make test               # parser, prune and normalize suites — offline fixtures, no network
+make install            # uv sync all three python apps + npm ci
+make migrate            # create the schema (see Database below for an existing one)
+make test               # parser, prune, normalize, auth and pagination — offline, no network
 make serve              # search API on :3000
+make mcp                # MCP server on :3001
 make web                # vite on :5173, proxying /api to :3000 (same-origin, so no CORS)
 ```
 
-`providers.DEFAULT` in [providers.py](apps/backend/jobber/providers.py) picks the LLM vendor for both ingestion and search, and its key is required at startup. Switching vendors is an edit there, not a flag.
+`providers.DEFAULT` in [providers.py](apps/backend/jobber/providers.py) picks the LLM vendor for both ingestion and search. Its key is required at startup by the two entry points that actually call a model — the API and the normalize step — and by nothing else. `scrape`, `index`, `boards` and `prune` boot on [jobber_cron/config.py](apps/cron/jobber_cron/config.py), the MCP server on [jobber_mcp/config.py](apps/mcp/jobber_mcp/config.py) — each a `Config` declaring only the fields that app can actually use, so those services hold no vendor key at all. Switching vendors is an edit there, not a flag.
+
+### Database
+
+Alembic owns the schema. It used to be a `create table if not exists` string executed on every pool open; it is now [db/migrations/schema.py](apps/backend/jobber/db/migrations/schema.py) plus revisions, so a column change is a migration rather than an edit and a hope.
+
+```bash
+make migrate                    # fresh database: builds postings, scrape_runs, api_tokens
+```
+
+On a database that **already has** `postings` and `scrape_runs`, revision `0001` is a transcription of what is already there — record it as applied rather than running it:
+
+```bash
+make stamp                      # marks 0001 as applied without executing it
+make migrate                    # now only 0002 runs, creating api_tokens
+```
+
+To confirm the models really do match a live database before trusting either, generate against it — an empty migration is the pass:
+
+```bash
+cd apps/backend && uv run alembic revision --autogenerate -m check
+```
+
+### MCP server
+
+`apps/mcp` serves `search_jobs` (hybrid search, paginated, compact cards) and `get_job` (one posting in full) over Streamable HTTP at `/mcp`. Every request needs `Authorization: Bearer <token>`.
+
+There is no endpoint that creates a token — that is the point. Mint one against whichever `DATABASE_URL` is in scope:
+
+```bash
+make token NAME=claude-desktop  # prints the token once; only its sha256 is stored
+```
+
+A lost token is re-minted, never recovered. Revoke by hand:
+
+```sql
+update api_tokens set revoked_at = now() where name = 'claude-desktop';
+```
 
 Ingestion is scheduled work, so it lives in `apps/cron` — the chain, or any step alone:
 
@@ -187,4 +237,16 @@ Each step selects only what changed, so a night that finds 50 new postings norma
 
 ## Deploy
 
-Four Railway services off three Dockerfiles: the API, the Caddy-fronted SPA, and one image running as both crons with different start commands. Build context is the repo root for `apps/backend` and `apps/cron` (the cron app path-depends on the backend), and `apps/frontend` for the SPA. Each Dockerfile's header comment carries the exact settings.
+Five Railway services off four Dockerfiles: the API, the Caddy-fronted SPA, the MCP server, and one image running as both crons with different start commands. Build context is the repo root for `apps/backend`, `apps/cron` and `apps/mcp` (both of the latter path-depend on the backend), and `apps/frontend` for the SPA. Each Dockerfile's header comment carries the exact settings.
+
+Variables differ per service, because only two entry points call a model:
+
+| Service | Dockerfile | Variables |
+|---|---|---|
+| api | `apps/backend/Dockerfile` | `DATABASE_URL`, `PINECONE_API_KEY`, the `providers.DEFAULT` key |
+| gather | `apps/cron/Dockerfile` | `DATABASE_URL`, `PINECONE_API_KEY`, the `providers.DEFAULT` key, `APIFY_TOKEN` |
+| prune | `apps/cron/Dockerfile` | `DATABASE_URL`, `PINECONE_API_KEY` |
+| mcp | `apps/mcp/Dockerfile` | `DATABASE_URL`, `PINECONE_API_KEY` |
+| web | `apps/frontend/Dockerfile` | — |
+
+`prune` and `mcp` carrying no vendor key is deliberate rather than an oversight: a credential a service cannot use is one it cannot leak.

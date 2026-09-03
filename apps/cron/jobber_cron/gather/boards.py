@@ -8,6 +8,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 from jobber.http import Fetcher
 
+from .. import boot_no_llm
+
 BOARDS = pathlib.Path(__file__).parent / "boards.json"
 
 PROBE = {
@@ -15,7 +17,7 @@ PROBE = {
     "lever": "https://api.lever.co/v0/postings/{}?mode=json",
     "ashby": "https://api.ashbyhq.com/posting-api/job-board/{}",
 }
-WORKERS = 12  #
+WORKERS = 12
 
 
 def known() -> dict[str, list[str]]:
@@ -34,7 +36,7 @@ def probe(fetch: Fetcher, ats: str, slug: str) -> int:
         return 0
     try:
         return count(ats, json.loads(text))
-    except ValueError:  # an HTML error page served with a 200
+    except ValueError:
         return 0
 
 
@@ -44,8 +46,6 @@ def discover(candidates: list[str], write: bool = True) -> dict[str, list[str]]:
     work = [(ats, s) for s in candidates for ats in PROBE if s not in seen.get(ats, ())]
     print(f"probing {len(work)} slug/ATS pairs ({len(candidates)} candidates)")
 
-    # A fetcher per worker: Fetcher throttles on a shared _last, so one instance
-    # across threads would serialize the whole sweep back to one request a delay.
     def run(job: tuple[str, str]) -> tuple[str, str, int]:
         ats, slug = job
         with Fetcher(delay=0.0, cache=False) as fetch:
@@ -83,7 +83,5 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    from .. import boot
-
-    boot()
+    boot_no_llm()
     raise SystemExit(main())

@@ -3,7 +3,9 @@ from __future__ import annotations
 from jobber import db
 from jobber import index as index_mod
 
-CHECKPOINT = 100  # postings per checkpoint; indexed_at is set per batch
+from .. import boot_no_llm, noargs
+
+CHECKPOINT = 100
 
 
 def index() -> int:
@@ -28,8 +30,6 @@ def index() -> int:
 
 
 if __name__ == "__main__":
-    from .. import boot, noargs
-
     noargs("python -m jobber_cron.gather.index", __doc__)
-    boot()
+    boot_no_llm()
     raise SystemExit(index())

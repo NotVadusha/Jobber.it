@@ -9,67 +9,13 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Json
 from psycopg_pool import ConnectionPool
 
-from . import config
+from .. import config
 
-# Mirrors what the gather chain's normalize step writes back (jobber_cron.gather
-# .normalize.merge), which is also what index.chunks() reads.
 STAGE1 = ("url", "title", "company", "description_text", "location_raw", "posted_at", "extra")
 STAGE2 = ("seniority", "years_required", "remote_policy", "location",
           "salary_min", "salary_max", "stack", "responsibilities_text", "requirements_text")
-# The shape index.chunks() and the API card renderers expect back.
 POSTING_FIELDS = ("id", "source", "url", "title", "company", "posted_at", *STAGE2,
                   "location_raw", "description_text")
-
-SCHEMA = """
-create table if not exists postings (
-  id                    text primary key,
-  source                text not null,
-
-  url                   text not null,
-  title                 text not null,
-  company               text not null,
-  description_text      text not null,
-  location_raw          text,
-  posted_at             timestamptz,
-  extra                 jsonb not null default '{}',
-
-  seniority             text,
-  years_required        int,
-  remote_policy         text,
-  location              text,
-  salary_min            int,
-  salary_max            int,
-  stack                 text[],
-  responsibilities_text text,
-  requirements_text     text,
-
-  normalized_at         timestamptz,
-  indexed_at            timestamptz,
-  first_seen_at         timestamptz not null default now(),
-  last_seen_at          timestamptz not null,
-  delisted_at           timestamptz
-);
-
-create index if not exists postings_pending_normalize on postings (source)
-  where normalized_at is null;
-create index if not exists postings_pending_index on postings (source)
-  where indexed_at is null;
-create index if not exists postings_live on postings (source, last_seen_at)
-  where delisted_at is null;
-
-create table if not exists scrape_runs (
-  id          bigserial primary key,
-  source      text not null,
-  started_at  timestamptz not null default now(),
-  finished_at timestamptz,
-  ok          boolean not null default false,
-  count       int not null default 0,
-  error       text
-);
-
-create index if not exists scrape_runs_latest_ok on scrape_runs (source, started_at desc)
-  where ok;
-"""
 
 _POOL: ConnectionPool | None = None
 
@@ -78,12 +24,8 @@ def pool() -> ConnectionPool:
     global _POOL
     if _POOL is None:
         url = config.get().database_url
-        # A pool because uvicorn runs sync endpoints in a threadpool and psycopg
-        # connections are not thread-safe. open=True: the default is deprecated.
         _POOL = ConnectionPool(url, min_size=1, max_size=8, open=True,
                                kwargs={"row_factory": dict_row})
-        with _POOL.connection() as conn:
-            conn.execute(SCHEMA)
     return _POOL
 
 
@@ -122,8 +64,6 @@ on conflict (id) do update set
 
 
 def start_run(source: str) -> int:
-    """Opens a scrape_runs row. Its started_at is the cutoff every delist
-    decision for this source is later measured against."""
     with conn() as c:
         row = c.execute(
             "insert into scrape_runs (source) values (%s) returning id", (source,)
@@ -154,12 +94,6 @@ def upsert(postings: Iterable[dict]) -> int:
 
 
 def pending_normalize() -> list[dict]:
-    """Engineering postings awaiting extraction. The role gate is what makes a
-    wide board sweep affordable: an ATS board runs ~25% engineering, and the
-    other 75% is Account Executives the LLM would be paid to read. Rows scraped
-    before the classifier existed carry no role and wait here until the next
-    scrape re-upserts their extra — pending_index requires normalized_at, so a
-    skipped posting stays out of the index too."""
     sql = ("select id, source, title, company, url, description_text, location_raw,"
            " posted_at, extra from postings"
            " where normalized_at is null and delisted_at is null"
@@ -225,3 +159,22 @@ def mark_delisted(ids: list[str]) -> int:
     with conn() as c:
         c.execute("update postings set delisted_at = now() where id = any(%s)", (ids,))
     return len(ids)
+
+
+def posting(posting_id: str) -> dict | None:
+    with conn() as c:
+        row = c.execute(
+            f"select {', '.join(POSTING_FIELDS)} from postings"
+            " where id = %s and delisted_at is null",
+            (posting_id,),
+        ).fetchone()
+    return _iso([row])[0] if row else None
+
+
+def token_by_hash(digest: str) -> dict | None:
+    with conn() as c:
+        return c.execute(
+            "select id, name, created_at, revoked_at from api_tokens"
+            " where token_hash = %s",
+            (digest,),
+        ).fetchone()
