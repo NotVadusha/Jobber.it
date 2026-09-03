@@ -1,11 +1,8 @@
 import type { ReactElement } from 'react'
 
 import type { PostgresSearchResponse } from '@/api/search'
-import { HighlightedText } from '@/features/catalogue/HighlightedText'
-import { formatCompensation, useCompensationPeriod } from '@/features/jobs/compensation'
-import { SENIORITY_LABELS, WORKPLACE_LABELS } from '@/features/jobs/posting-labels'
-import { sourceLabel } from '@/features/jobs/source-labels'
-import { formatPostingDate } from '@/lib/format'
+import { HighlightedText } from '@/features/jobs/HighlightedText'
+import { PostingFacts, PostingStack } from '@/features/jobs/PostingFacts'
 
 type CataloguePosting = PostgresSearchResponse['data'][number]
 
@@ -17,20 +14,7 @@ export const CataloguePostingCard = ({
   posting: CataloguePosting
   resultNumber: number
   terms: readonly string[]
-}): ReactElement => {
-  const { period } = useCompensationPeriod()
-  const compensation = formatCompensation(
-    posting.salaryMin,
-    posting.salaryMax,
-    period,
-  )
-  const postingDate = formatPostingDate(posting.postedAt, posting.firstSeenAt)
-  const remotePolicy = posting.remotePolicy ?? 'unknown'
-  const seniorityValue = posting.seniority ?? 'unknown'
-  const yearsRequired = posting.yearsRequired ?? null
-  const stack = posting.stack ?? []
-  const workplace = remotePolicy === 'unknown' ? null : WORKPLACE_LABELS[remotePolicy]
-  const seniority = seniorityValue === 'unknown' ? null : SENIORITY_LABELS[seniorityValue]
+}): ReactElement {
   const titleId = `catalogue-posting-${resultNumber}`
 
   return (
@@ -46,58 +30,8 @@ export const CataloguePostingCard = ({
           <HighlightedText text={posting.title} terms={terms} />
         </h3>
 
-        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-tertiary">
-          <span className="font-semibold text-secondary">
-            <HighlightedText text={posting.company} terms={terms} />
-          </span>
-          {posting.location && <><span aria-hidden="true">·</span><span>{posting.location}</span></>}
-          {workplace && (
-            <>
-              <span aria-hidden="true">·</span>
-              <span className={`rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] ${
-                remotePolicy === 'remote'
-                  ? 'border-strong text-positive'
-                  : remotePolicy === 'hybrid'
-                    ? 'border-accent bg-accent-soft text-accent'
-                    : 'border-strong text-secondary'
-              }`}>
-                {workplace}
-              </span>
-            </>
-          )}
-          {seniority && <><span aria-hidden="true">·</span><span>{seniority}</span></>}
-          <span aria-hidden="true">·</span>
-          <span>
-            {yearsRequired === null
-              ? 'Experience not listed'
-              : `${yearsRequired}+ ${yearsRequired === 1 ? 'year' : 'years'}`}
-          </span>
-          <span aria-hidden="true">·</span>
-          <span className={compensation ? 'text-secondary' : undefined}>
-            {compensation ?? 'Salary undisclosed'}
-          </span>
-          <span aria-hidden="true">·</span>
-          <span>via {sourceLabel(posting.source)}</span>
-          {postingDate && (
-            <>
-              <span aria-hidden="true">·</span>
-              <time dateTime={postingDate.dateTime}>{postingDate.label}</time>
-            </>
-          )}
-        </div>
-
-        {stack.length > 0 && (
-          <ul aria-label="Technologies" className="mt-3 flex flex-wrap gap-1.5">
-            {stack.map((technology, index) => (
-              <li
-                key={`${technology}:${index}`}
-                className="rounded-sm border border-subtle bg-surface-raised px-2 py-1 font-mono text-[11px] text-secondary"
-              >
-                <HighlightedText text={technology} terms={terms} />
-              </li>
-            ))}
-          </ul>
-        )}
+        <PostingFacts posting={posting} terms={terms} />
+        <PostingStack stack={posting.stack ?? []} terms={terms} />
       </article>
     </li>
   )

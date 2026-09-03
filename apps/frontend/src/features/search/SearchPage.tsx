@@ -7,8 +7,9 @@ import {
 } from 'react'
 
 import { ApiError } from '@/api/client'
-import type { BestMatchRequest, PineconeSearchSelection } from '@/api/search'
-import { usePineconeSearchQuery } from '@/api/search'
+import type { BestMatchRequest } from '@/api/search'
+import { useBestMatchStreamQuery } from '@/api/search-stream'
+import type { BestMatchSelection } from '@/api/search-stream'
 import { AllPostingsView } from '@/features/catalogue/AllPostingsView'
 import {
   CATALOGUE_DEBOUNCE_MS,
@@ -16,10 +17,9 @@ import {
   emptyCatalogueFilters,
 } from '@/features/catalogue/catalogue-state'
 import { ProfileReadError, readProfile, type ProfileDocument } from '@/features/cv/read-profile'
+import { BestMatchView } from '@/features/search/BestMatchView'
 import { JobsViewSwitcher } from '@/features/search/JobsViewSwitcher'
 import { SearchForm } from '@/features/search/SearchForm'
-import { SearchResults } from '@/features/search/SearchResults'
-import { SearchTrace } from '@/features/search/SearchTrace'
 import { navigate } from '@/routing/hash-router'
 import type { JobsUrlFilters, JobsUrlState, JobsView } from '@/routing/jobs-model'
 import { normalizeJobsState, toApiFilters } from '@/routing/jobs-state'
@@ -71,20 +71,15 @@ export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactEleme
     (state): SearchDraft => ({ query: state.query, filters: state.filters }),
   )
   const [profile, setProfile] = useState<ProfileDocument | null>(null)
-  const [selection, setSelection] = useState<PineconeSearchSelection | null>(null)
+  const [selection, setSelection] = useState<BestMatchSelection | null>(null)
   const [localError, setLocalError] = useState<ApiError | null>(null)
   const [cvOnlyBestVisible, setCvOnlyBestVisible] = useState(false)
 
   const visibleView: JobsView =
     !urlState.query && cvOnlyBestVisible ? 'best' : urlState.view
-  const {
-    data: bestMatchResponse,
-    error: bestMatchFailure,
-    isFetching: bestMatchFetching,
-  } = usePineconeSearchQuery(visibleView === 'best' ? selection : null)
-  const bestData = bestMatchResponse?.data ?? null
-  const bestError =
-    localError ?? (bestMatchFailure instanceof ApiError ? bestMatchFailure : null)
+  const bestMatchQuery = useBestMatchStreamQuery(
+    visibleView === 'best' ? selection : null,
+  )
   const appliedHash = encodeJobsState(urlState)
   const catalogueDraftState = useMemo(
     () => buildCatalogueDraftState({
@@ -95,6 +90,20 @@ export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactEleme
     [draft.filters, draft.query, urlState],
   )
   const catalogueDraftHash = encodeJobsState(catalogueDraftState)
+  const pendingRequest = useMemo(
+    () => buildBestMatchRequest(
+      normalizeJobsState({
+        ...urlState,
+        query: draft.query.trim(),
+        filters: draft.filters,
+        view: 'best',
+        sort: 'newest',
+        page: 1,
+      }),
+      profile?.text ?? '',
+    ),
+    [draft.filters, draft.query, profile, urlState],
+  )
 
   useEffect(() => {
     dispatch({ type: 'route.changed', state: urlState })
@@ -225,6 +234,20 @@ export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactEleme
     }, 'push')
   }
 
+  const browseAllPostings = (): void => {
+    setCvOnlyBestVisible(false)
+    navigate({
+      name: 'jobs',
+      state: normalizeJobsState({
+        ...urlState,
+        view: 'all',
+        query: draft.query.trim(),
+        filters: draft.filters,
+        page: 1,
+      }),
+    }, 'push')
+  }
+
   return (
     <section className="mx-auto w-full max-w-[var(--layout-content-max)] px-4 pb-20 sm:px-6">
       <div className="pt-12 pb-2 sm:pt-16">
@@ -254,6 +277,14 @@ export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactEleme
         />
       </div>
 
+      {localError && (
+        <PageState
+          kind="error"
+          title="Could not search Best matches"
+          description={localError.message}
+        />
+      )}
+
       <JobsViewSwitcher
         view={visibleView}
         bestEnabled={Boolean(draft.query.trim() || profile)}
@@ -272,44 +303,12 @@ export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactEleme
           onClearQuery={clearQuery}
         />
       ) : (
-        <div className="mt-10">
-          {bestError && (
-            <PageState
-              kind="error"
-              title="Could not search Best matches"
-              description={
-                bestError.requestId
-                  ? `${bestError.message} · reference ${bestError.requestId}`
-                  : bestError.message
-              }
-            />
-          )}
-          {!bestError && !bestData && (
-            <PageState
-              kind={bestMatchFetching ? 'loading' : 'empty'}
-              title={
-                bestMatchFetching
-                  ? 'Ranking postings'
-                  : 'Best matches has not run yet'
-              }
-              description={
-                bestMatchFetching
-                  ? undefined
-                  : 'Best matches orders postings by semantic relevance. Run the search to rank the current query, attached profile, and filters.'
-              }
-            />
-          )}
-          {bestData && (
-            <>
-              <SearchTrace
-                data={bestData}
-                tookMs={bestMatchResponse?.meta.tookMs}
-                busy={bestMatchFetching}
-              />
-              <SearchResults data={bestData} busy={bestMatchFetching} />
-            </>
-          )}
-        </div>
+        <BestMatchView
+          selection={visibleView === 'best' ? selection : null}
+          pendingRequest={pendingRequest}
+          onRun={() => runBestMatch()}
+          onBrowseAllPostings={browseAllPostings}
+        />
       )}
     </section>
   )

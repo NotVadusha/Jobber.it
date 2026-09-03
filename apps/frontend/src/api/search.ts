@@ -22,20 +22,15 @@ type WirePostgresSearchResponse =
 export type PostgresSearchRequest = WirePostgresSearchRequest
 export type PostgresSearchResponse = KeysToCamelCase<WirePostgresSearchResponse>
 
-export type PineconeSearchSelection = {
-  executionId: string
-  request: BestMatchRequest
-}
-
 export const searchQueryKeys = {
   all: ['search'] as const,
   corpusMeta: () => [...searchQueryKeys.all, 'corpus-meta'] as const,
   postgres: (request: PostgresSearchRequest) =>
     [...searchQueryKeys.all, 'postgres', request] as const,
   postgresIdle: () => [...searchQueryKeys.all, 'postgres', 'idle'] as const,
-  pinecone: (executionId: string) =>
-    [...searchQueryKeys.all, 'pinecone', executionId] as const,
-  pineconeIdle: () => [...searchQueryKeys.all, 'pinecone', 'idle'] as const,
+  bestMatch: (executionId: string) =>
+    [...searchQueryKeys.all, 'best-match', executionId] as const,
+  bestMatchIdle: () => [...searchQueryKeys.all, 'best-match', 'idle'] as const,
 }
 
 const fetchCorpusMeta = async (signal?: AbortSignal): Promise<MetaResponse> => {
@@ -43,18 +38,10 @@ const fetchCorpusMeta = async (signal?: AbortSignal): Promise<MetaResponse> => {
   return response.data
 }
 
-const fetchPineconeSearch = async (
-  input: BestMatchRequest,
-  signal?: AbortSignal,
-): Promise<BestMatchResponse> => {
-  const response = await api.post<BestMatchResponse>('/search', input, { signal })
-  return response.data
-}
-
 const fetchPostgresSearch = async (
   request: PostgresSearchRequest,
   signal?: AbortSignal,
-): Promise<PostgresSearchResponse> => {
+): Promise<PostgresSearchResponse> => => {
   const response = await api.post<PostgresSearchResponse>(
     '/postings/query',
     request,
@@ -89,20 +76,3 @@ export const usePostgresSearchQuery = (
   })
 }
 
-export const usePineconeSearchQuery = (
-  selection: PineconeSearchSelection | null,
-) => {
-  return useQuery({
-    queryKey: selection
-      ? searchQueryKeys.pinecone(selection.executionId)
-      : searchQueryKeys.pineconeIdle(),
-    queryFn: selection
-      ? ({ signal }) => fetchPineconeSearch(selection.request, signal)
-      : skipToken,
-    staleTime: Infinity,
-    gcTime: Infinity,
-    retry: false,
-    refetchOnWindowFocus: false,
-    placeholderData: (previousData) => previousData,
-  })
-}

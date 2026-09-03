@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any, Generic, TypeVar
+from typing import Annotated, Any, Generic, Literal, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from ..postings import BestMatchPosting, CatalogueSort, PostingFilters, SourceId
-from ..ranking import AppliedFilter, TraceNode
+from ..ranking import AppliedFilter, RankingStage, TraceNode, TraceStatus
 
 DataT = TypeVar("DataT")
 
@@ -113,3 +113,67 @@ class BestMatchData(BaseModel):
     filters_applied: list[AppliedFilter]
     corpus_size: int = Field(ge=0)
     trace: list[TraceNode]
+
+
+class StreamEventName(StrEnum):
+    SEARCH_STARTED = "search.started"
+    STAGE_STARTED = "stage.started"
+    STAGE_COMPLETED = "stage.completed"
+    SEARCH_COMPLETED = "search.completed"
+    SEARCH_FAILED = "search.failed"
+
+
+class SearchStarted(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    event: Literal[StreamEventName.SEARCH_STARTED] = StreamEventName.SEARCH_STARTED
+    request_id: str
+
+
+class StageStarted(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    event: Literal[StreamEventName.STAGE_STARTED] = StreamEventName.STAGE_STARTED
+    request_id: str
+    stage: RankingStage
+    ordinal: int = Field(ge=1, le=5)
+
+
+class StageCompleted(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    event: Literal[StreamEventName.STAGE_COMPLETED] = StreamEventName.STAGE_COMPLETED
+    request_id: str
+    stage: RankingStage
+    ordinal: int = Field(ge=1, le=5)
+    status: TraceStatus
+    detail: str
+    item_count: int = Field(ge=0)
+    duration_ms: float = Field(ge=0)
+
+
+class SearchCompleted(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    event: Literal[StreamEventName.SEARCH_COMPLETED] = StreamEventName.SEARCH_COMPLETED
+    request_id: str
+    snapshot: BestMatchData
+    took_ms: float = Field(ge=0)
+
+
+class SearchFailed(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    event: Literal[StreamEventName.SEARCH_FAILED] = StreamEventName.SEARCH_FAILED
+    request_id: str
+    error: ErrorBody
+
+
+SearchStreamEventModel = (
+    SearchStarted | StageStarted | StageCompleted | SearchCompleted | SearchFailed
+)
+
+SearchStreamEvent = Annotated[
+    SearchStreamEventModel,
+    Field(discriminator="event"),
+]
