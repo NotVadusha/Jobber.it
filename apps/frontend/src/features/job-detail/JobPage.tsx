@@ -65,7 +65,7 @@ export function JobPage({ postingId }: { postingId: string }): ReactElement {
   const posting = detailQuery.data?.data ?? null
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:py-12">
+    <section className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:py-12">
       <Breadcrumb title={posting?.title ?? null} />
 
       {detailQuery.isPending && (
@@ -137,6 +137,6 @@ export function JobPage({ postingId }: { postingId: string }): ReactElement {
           )}
         </>
       )}
-    </main>
+    </section>
   )
 }

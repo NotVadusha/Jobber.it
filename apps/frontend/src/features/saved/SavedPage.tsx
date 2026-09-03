@@ -84,7 +84,7 @@ export function SavedPage(): ReactElement {
   const resolvedKnown = lookupQuery.isSuccess && !lookupQuery.isPlaceholderData
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:py-12">
+    <section className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:py-12">
       <h1 className="text-xl font-semibold leading-tight text-primary sm:text-2xl">Saved jobs</h1>
       <p className="mt-2 max-w-2xl text-xs leading-relaxed text-tertiary">{DEVICE_LOCAL_NOTICE}</p>
 
@@ -135,6 +135,6 @@ export function SavedPage(): ReactElement {
           </ul>
         </>
       )}
-    </main>
+    </section>
   )
 }

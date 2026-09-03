@@ -20,10 +20,10 @@ const waitForCatalogue = async (page: Page): Promise<void> => {
 }
 
 const openBrowse = async (page: Page, query: string): Promise<void> => {
-  const catalogue = waitForCatalogue(page)
-  await page.goto(`/#/jobs?q=${encodeURIComponent(query)}`)
-  await catalogue
-  await expect(page.getByRole('list', { name: 'All postings results' })).toBeVisible()
+  await page.goto(`/#/jobs?view=all&q=${encodeURIComponent(query)}`)
+  const results = page.getByRole('list', { name: 'All postings results' })
+  await expect(results).toBeVisible()
+  await expect(results.locator(':scope > li').first()).toBeVisible()
 }
 
 const openJob = async (page: Page, postingId: string): Promise<void> => {
@@ -137,9 +137,7 @@ test('returning by the breadcrumb restores the page, its results, and its scroll
   await page.getByRole('list', { name: 'All postings results' }).getByRole('link').first().click()
   await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toBeVisible()
 
-  const back = waitForCatalogue(page)
   await page.getByRole('link', { name: 'Jobs' }).click()
-  await back
   await expect(page).toHaveURL(/#\/jobs\?page=2$/)
   await expect(page.getByRole('list', { name: 'All postings results' })).toBeVisible()
   await expect
@@ -159,10 +157,9 @@ test('the browser Back button restores exactly what the breadcrumb restores', as
   await page.getByRole('list', { name: 'All postings results' }).getByRole('link').first().click()
   await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toBeVisible()
 
-  const back = waitForCatalogue(page)
   await page.goBack()
-  await back
   await expect(page).toHaveURL(/#\/jobs\?page=2$/)
+  await expect(page.getByRole('list', { name: 'All postings results' })).toBeVisible()
   await expect
     .poll(() => page.evaluate(() => window.scrollY))
     .toBeGreaterThan(scrolled - 120)
