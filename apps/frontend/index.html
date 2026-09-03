@@ -1,11 +1,37 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark" data-theme-source="system">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>jobber.it — retrieval console</title>
     <meta name="description" content="Search normalized job postings and see why each result ranked." />
+    <script data-jobber-theme-bootstrap>
+      ;(() => {
+        const root = document.documentElement
+        const key = 'jobber.theme.v1'
+        let stored = null
+
+        try {
+          const value = window.localStorage.getItem(key)
+          stored = value === 'light' || value === 'dark' ? value : null
+        } catch {
+          stored = null
+        }
+
+        let system = 'dark'
+        try {
+          system = window.matchMedia?.('(prefers-color-scheme: light)').matches
+            ? 'light'
+            : 'dark'
+        } catch {
+          system = 'dark'
+        }
+
+        root.dataset.theme = stored ?? system
+        root.dataset.themeSource = stored ? 'stored' : 'system'
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

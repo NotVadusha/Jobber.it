@@ -72,6 +72,22 @@
       "rules": {
         "no-restricted-imports": "off"
       }
+    },
+    {
+      "files": ["src/ui/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/app/**", "@/features/**", "@/api/**"],
+                "message": "ui foundation modules are product-agnostic and never import app, features, or API code."
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

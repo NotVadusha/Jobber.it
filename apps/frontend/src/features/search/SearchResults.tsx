@@ -1,5 +1,6 @@
 import type { BestMatchResponse } from '@/api/search'
 import { formatPostedMonth, formatSalary, splitTerms } from '@/lib/format'
+import { PageState } from '@/ui/PageState'
 
 type BestMatchData = BestMatchResponse['data']
 type BestMatchPosting = BestMatchData['results'][number]
@@ -28,10 +29,10 @@ function Result({ result, rank, tokens }: {
 
   return (
     <li
-      className="rise grid grid-cols-[2rem_1fr] gap-x-4 border-b border-line py-6"
+      className="rise grid grid-cols-[2rem_1fr] gap-x-4 border-b border-subtle py-6"
       style={{ animationDelay: `${Math.min(rank, 12) * 45}ms` }}
     >
-      <span className="pt-1 font-mono text-sm tabular-nums text-muted">
+      <span className="pt-1 font-mono text-sm tabular-nums text-secondary">
         {String(rank + 1).padStart(2, '0')}
       </span>
 
@@ -42,24 +43,24 @@ function Result({ result, rank, tokens }: {
               href={result.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="transition-colors hover:text-lex"
+              className="transition-colors hover:text-accent-text"
             >
               {result.title}
-              <span aria-hidden="true" className="ml-1.5 text-xs text-muted">↗</span>
+              <span aria-hidden="true" className="ml-1.5 text-xs text-tertiary">↗</span>
             </a>
           </h3>
           <div className="flex shrink-0 items-center gap-2 pt-1">
-            <div className="h-[3px] w-14 bg-line" aria-hidden="true">
-              <div className="h-full bg-lex" style={{ width: `${result.score * 100}%` }} />
+            <div className="h-[3px] w-14 bg-subtle" aria-hidden="true">
+              <div className="h-full bg-accent" style={{ width: `${result.score * 100}%` }} />
             </div>
-            <span className="font-mono text-xs tabular-nums text-muted">
+            <span className="font-mono text-xs tabular-nums text-secondary">
               {result.score.toFixed(2)}
             </span>
           </div>
         </div>
 
-        <p className="mt-1.5 font-mono text-xs text-muted">
-          <span className="text-paper">{result.company}</span>
+        <p className="mt-1.5 font-mono text-xs text-secondary">
+          <span className="text-primary">{result.company}</span>
           {facts.map((fact) => (
             <span key={String(fact)}> · {fact}</span>
           ))}
@@ -73,7 +74,7 @@ function Result({ result, rank, tokens }: {
                 <li
                   key={tech}
                   className={`border px-2 py-0.5 font-mono text-xs ${
-                    hit ? 'border-lex/60 bg-lex/10 text-lex' : 'border-line text-muted'
+                    hit ? 'border-accent/60 bg-accent/10 text-accent' : 'border-subtle text-secondary'
                   }`}
                 >
                   {tech}
@@ -94,14 +95,17 @@ export function SearchResults({ data, busy }: SearchResultsProps) {
 
   if (data.results.length === 0) {
     return (
-      <p className="mt-10 font-mono text-sm text-muted">
-        Nothing cleared the filters. Drop a constraint, or search fewer terms.
-      </p>
+      <PageState
+        kind="empty"
+        title="Nothing cleared the filters."
+        description="Drop a constraint, or search fewer terms."
+        compact
+      />
     )
   }
 
   return (
-    <ol className="mt-4 border-t border-line" aria-busy={busy}>
+    <ol className="mt-4 border-t border-subtle" aria-busy={busy}>
       {data.results.map((result, rank) => (
         <Result key={result.id} result={result} rank={rank} tokens={tokens} />
       ))}
