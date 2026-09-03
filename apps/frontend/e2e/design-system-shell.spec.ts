@@ -348,20 +348,22 @@ test('toast replacement and close use one polite live region', async ({ page }) 
   // role="status" doesn't compute its accessible name from content per the
   // ARIA spec (unlike role="alert" or "button"), so the message is asserted
   // via toContainText rather than a getByRole name filter.
-  const toast = page.getByRole('status')
-  await expect(toast).toBeVisible()
-  await expect(toast).toContainText('Profile removed')
-  await expect(toast).toHaveAttribute('aria-live', 'polite')
-  await expect(toast).toHaveAttribute('aria-atomic', 'true')
-  await expect(page.getByRole('status')).toHaveCount(1)
+  // Scoped to the toast viewport because the catalogue's loading state is a
+  // second, legitimate polite region on this page.
+  const toasts = page.locator('#toast-viewport').getByRole('status')
+  await expect(toasts).toBeVisible()
+  await expect(toasts).toContainText('Profile removed')
+  await expect(toasts).toHaveAttribute('aria-live', 'polite')
+  await expect(toasts).toHaveAttribute('aria-atomic', 'true')
+  await expect(toasts).toHaveCount(1)
 
   // A second real trigger must replace the toast, never stack a second one.
   await attachAndRemoveProfile(page)
-  await expect(page.getByRole('status')).toHaveCount(1)
-  await expect(toast).toContainText('Profile removed')
+  await expect(toasts).toHaveCount(1)
+  await expect(toasts).toContainText('Profile removed')
 
   await page.getByRole('button', { name: 'Dismiss notification' }).click()
-  await expect(page.getByRole('status')).toHaveCount(0)
+  await expect(toasts).toHaveCount(0)
 })
 
 // PageState's 'empty' kind is already exercised live via '/' in
