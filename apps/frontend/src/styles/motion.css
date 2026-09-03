@@ -1,0 +1,44 @@
+@keyframes ui-rise {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ui-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+@keyframes ui-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+.rise {
+  animation: ui-rise var(--motion-slow) var(--ease-standard) both;
+}
+
+.ui-skeleton {
+  background:
+    linear-gradient(
+      90deg,
+      var(--theme-surface-2) 25%,
+      var(--theme-surface-3) 50%,
+      var(--theme-surface-2) 75%
+    );
+  background-size: 200% 100%;
+  animation: ui-shimmer 1.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .ui-skeleton {
+    background: var(--theme-surface-2);
+  }
+}

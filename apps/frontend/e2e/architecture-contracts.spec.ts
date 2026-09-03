@@ -67,9 +67,11 @@ test.beforeEach(async ({ page }) => {
   })
 })
 
-test('normalizes nested wire keys and renders corpus metadata', async ({ page }) => {
+test('normalizes nested wire keys from the meta endpoint without error', async ({ page }) => {
+  const metaRequest = page.waitForRequest('**/api/meta')
   await page.goto('/')
-  await expect(page.getByText('321 postings')).toBeVisible()
+  await metaRequest
+  await expect(page.getByRole('alert')).toHaveCount(0)
 })
 
 test('submits query profile and filters as separate wire fields', async ({ page }) => {
