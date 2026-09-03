@@ -72,7 +72,7 @@ export function ToastProvider({ children }: { children: ReactNode }): ReactEleme
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
+      <div id="toast-viewport" className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
         {toast && (
           <div
             role="status"
