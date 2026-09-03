@@ -5,7 +5,15 @@ import { expect, test } from '@playwright/test'
 // imports no routing module directly (see docs/plans/03-routing-and-shareable-state.md §18).
 
 const metaWire = {
-  data: { corpus_size: 321, sources: ['greenhouse', 'djinni'], retrieval: 'hybrid+rerank' },
+  data: {
+    corpus_size: 321,
+    sources: ['greenhouse', 'djinni'],
+    source_counts: [
+      { source: 'greenhouse', count: 201 },
+      { source: 'djinni', count: 120 },
+    ],
+    retrieval: 'hybrid+rerank',
+  },
   meta: { request_id: 'req-meta' },
 }
 
@@ -74,7 +82,7 @@ test.describe('canonical jobs URL', () => {
 
   test('a 501-character query truncates to 500', async ({ page }) => {
     await page.goto(`/#/jobs?q=${'x'.repeat(501)}`)
-    await expect(page.getByRole('textbox', { name: 'Query' })).toHaveValue('x'.repeat(500))
+    await expect(page.getByRole('textbox', { name: 'Search postings' })).toHaveValue('x'.repeat(500))
     await expect(page).toHaveURL(new RegExp(`q=${'x'.repeat(500)}$`))
   })
 
@@ -242,8 +250,8 @@ test.describe('history', () => {
     await page.goto('/#/about')
     await expect(page).toHaveURL(/#\/jobs$/)
 
-    await page.getByRole('textbox', { name: 'Query' }).fill('postgres')
-    await page.getByRole('button', { name: 'Search' }).click()
+    await page.getByRole('textbox', { name: 'Search postings' }).fill('postgres')
+    await page.getByRole('button', { name: 'Best matches' }).click()
     await expect(page).toHaveURL(/#\/jobs\?q=postgres$/)
     expect(requests()).toBe(1)
 
@@ -260,7 +268,7 @@ test.describe('history', () => {
     const beforeId = await page.evaluate(() => (window.history.state as { jobber?: { entryId?: string } })?.jobber?.entryId)
     const beforeLength = await page.evaluate(() => window.history.length)
 
-    await page.getByRole('button', { name: 'Search' }).click()
+    await page.getByRole('button', { name: 'Best matches' }).click()
 
     await expect(page).toHaveURL(/#\/jobs\?q=postgres$/)
     const afterId = await page.evaluate(() => (window.history.state as { jobber?: { entryId?: string } })?.jobber?.entryId)
@@ -272,8 +280,8 @@ test.describe('history', () => {
   test('back and forward move between distinct searches', async ({ page }) => {
     await mockSearch(page)
     await page.goto('/')
-    const input = page.getByRole('textbox', { name: 'Query' })
-    const submit = page.getByRole('button', { name: 'Search' })
+    const input = page.getByRole('textbox', { name: 'Search postings' })
+    const submit = page.getByRole('button', { name: 'Best matches' })
 
     await input.fill('postgres')
     await submit.click()
@@ -295,16 +303,22 @@ test.describe('history', () => {
 
 test.describe('search integration', () => {
   test('direct-opening a shared query and filters URL hydrates and reruns automatically', async ({ page }) => {
-    const requests = await mockSearch(page)
+    let body: unknown
+    let requests = 0
+    await page.route('**/api/search', async (route) => {
+      requests += 1
+      body = route.request().postDataJSON()
+      await route.fulfill({ status: 200, contentType: 'application/json', json: searchWire })
+    })
 
     await page.goto('/#/jobs?q=postgres&workplace=remote,hybrid&seniority=senior')
 
-    await expect(page.getByRole('textbox', { name: 'Query' })).toHaveValue('postgres')
-    await expect(page.getByRole('button', { name: 'remote' })).toHaveAttribute('aria-pressed', 'true')
-    await expect(page.getByRole('button', { name: 'hybrid' })).toHaveAttribute('aria-pressed', 'true')
-    await expect(page.getByRole('button', { name: 'onsite' })).toHaveAttribute('aria-pressed', 'false')
-    await expect(page.getByRole('combobox')).toHaveValue('senior')
-    await expect.poll(() => requests()).toBe(1)
+    await expect(page.getByRole('textbox', { name: 'Search postings' })).toHaveValue('postgres')
+    await expect.poll(() => requests).toBe(1)
+    expect(body).toMatchObject({
+      query: 'postgres',
+      filters: { remote_policy: ['remote', 'hybrid'], seniority: ['senior'] },
+    })
   })
 
   test('submitting sends query, filters and profile as separate wire fields', async ({ page }) => {
@@ -315,9 +329,9 @@ test.describe('search integration', () => {
     })
 
     await page.goto('/')
-    await page.getByRole('button', { name: 'remote' }).click()
-    await page.getByRole('textbox', { name: 'Query' }).fill('postgres')
-    await page.getByRole('button', { name: 'Search' }).click()
+    await page.getByRole('button', { name: 'Remote', exact: true }).click()
+    await page.getByRole('textbox', { name: 'Search postings' }).fill('postgres')
+    await page.getByRole('button', { name: 'Best matches' }).click()
 
     await expect(page).toHaveURL(/#\/jobs\?q=postgres&workplace=remote$/)
     expect(body).toMatchObject({
@@ -335,7 +349,7 @@ test.describe('search integration', () => {
       mimeType: 'text/plain',
       buffer: Buffer.from('Python postgres experience'),
     })
-    await page.getByRole('button', { name: 'Search' }).click()
+    await page.getByRole('button', { name: 'Best matches' }).click()
 
     await expect(page).toHaveURL(/#\/jobs$/)
     expect(page.url()).not.toContain('profile')
@@ -355,8 +369,8 @@ test.describe('search integration', () => {
       mimeType: 'text/plain',
       buffer: Buffer.from('Python postgres experience'),
     })
-    await page.getByRole('textbox', { name: 'Query' }).fill('postgres')
-    await page.getByRole('button', { name: 'Search' }).click()
+    await page.getByRole('textbox', { name: 'Search postings' }).fill('postgres')
+    await page.getByRole('button', { name: 'Best matches' }).click()
 
     await expect(page).toHaveURL(/#\/jobs\?q=postgres$/)
     expect(page.url()).not.toContain('profile')
@@ -368,8 +382,8 @@ test.describe('entry-scoped result restoration', () => {
   test('back to a prior same-tab entry restores its result without refetching; reload reruns', async ({ page }) => {
     const requests = await mockSearch(page)
     await page.goto('/')
-    const input = page.getByRole('textbox', { name: 'Query' })
-    const submit = page.getByRole('button', { name: 'Search' })
+    const input = page.getByRole('textbox', { name: 'Search postings' })
+    const submit = page.getByRole('button', { name: 'Best matches' })
 
     await input.fill('postgres')
     await submit.click()
@@ -397,8 +411,8 @@ test.describe('native link behavior', () => {
   test('the logo is a native anchor that navigates back to jobs', async ({ page }) => {
     await mockSearch(page)
     await page.goto('/')
-    await page.getByRole('textbox', { name: 'Query' }).fill('postgres')
-    await page.getByRole('button', { name: 'Search' }).click()
+    await page.getByRole('textbox', { name: 'Search postings' }).fill('postgres')
+    await page.getByRole('button', { name: 'Best matches' }).click()
     await expect(page).toHaveURL(/q=postgres$/)
 
     await page.getByRole('link', { name: 'jobber.it' }).click()

@@ -34,6 +34,7 @@ import {
   renewCurrentHistoryEntry,
 } from '@/routing/navigation-context'
 import { PageState } from '@/ui/PageState'
+import { useToast } from '@/ui/toast'
 
 type SearchDraft = {
   query: string
@@ -68,6 +69,7 @@ function buildBestMatchRequest(
 }
 
 export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactElement {
+  const { showToast } = useToast()
   const [draft, dispatch] = useReducer(
     searchDraftReducer,
     urlState,
@@ -250,6 +252,7 @@ export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactEleme
             setProfile(null)
             setSelection(null)
             if (!urlState.query.trim()) setCvOnlyBestVisible(false)
+            showToast({ message: 'Profile removed', tone: 'info' })
           }}
           onSubmit={submit}
         />
@@ -278,7 +281,11 @@ export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactEleme
             <PageState
               kind="error"
               title="Could not search Best matches"
-              description={bestError.message}
+              description={
+                bestError.requestId
+                  ? `${bestError.message} · reference ${bestError.requestId}`
+                  : bestError.message
+              }
             />
           )}
           {!bestError && !bestData && (
