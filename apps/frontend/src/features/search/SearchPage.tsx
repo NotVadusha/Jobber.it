@@ -1,90 +1,313 @@
-import { useState } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useReducer,
+  useState,
+  type ReactElement,
+} from 'react'
 
 import { ApiError } from '@/api/client'
-import { useCorpusMetaQuery } from '@/api/search'
-import { SearchExamples } from '@/features/search/SearchExamples'
+import type { BestMatchRequest, PineconeSearchSelection } from '@/api/search'
+import { usePineconeSearchQuery } from '@/api/search'
+import { AllPostingsView } from '@/features/catalogue/AllPostingsView'
+import {
+  CATALOGUE_DEBOUNCE_MS,
+  buildCatalogueDraftState,
+  emptyCatalogueFilters,
+} from '@/features/catalogue/catalogue-state'
+import { ProfileReadError, readProfile, type ProfileDocument } from '@/features/cv/read-profile'
+import { JobsViewSwitcher } from '@/features/search/JobsViewSwitcher'
 import { SearchForm } from '@/features/search/SearchForm'
 import { SearchResults } from '@/features/search/SearchResults'
 import { SearchTrace } from '@/features/search/SearchTrace'
-import { useSearchDraft } from '@/features/search/UseSearchDraft'
-import { useSearchExecution } from '@/features/search/UseSearchExecution'
-import { useSearchProfile } from '@/features/search/UseSearchProfile'
-import type { JobsUrlState } from '@/routing/jobs-model'
+import { navigate } from '@/routing/hash-router'
+import {
+  encodeJobsState,
+  normalizeJobsState,
+  toApiFilters,
+  type JobsUrlFilters,
+  type JobsUrlState,
+  type JobsView,
+} from '@/routing/jobs-url'
+import {
+  currentEntryId,
+  renewCurrentHistoryEntry,
+} from '@/routing/navigation-context'
 import { PageState } from '@/ui/PageState'
 
-export type SearchPageProps = {
-  urlState: JobsUrlState
+type SearchDraft = {
+  query: string
+  filters: JobsUrlFilters
 }
 
-export function SearchPage({ urlState }: SearchPageProps) {
-  const [localError, setLocalError] = useState<ApiError | null>(null)
-  const { draft, setQuery, formProps } = useSearchDraft(urlState)
-  const { profile, selectProfile, removeProfile } = useSearchProfile(setLocalError)
-  const { searchQuery, submit } = useSearchExecution({
+type DraftAction =
+  | { type: 'route.changed'; state: JobsUrlState }
+  | { type: 'query.changed'; query: string }
+  | { type: 'filters.changed'; filters: JobsUrlFilters }
+
+function searchDraftReducer(_draft: SearchDraft, action: DraftAction): SearchDraft {
+  switch (action.type) {
+    case 'route.changed':
+      return { query: action.state.query, filters: action.state.filters }
+    case 'query.changed':
+      return { ..._draft, query: action.query }
+    case 'filters.changed':
+      return { ..._draft, filters: action.filters }
+  }
+}
+
+function buildBestMatchRequest(
+  state: JobsUrlState,
+  profileText: string,
+): BestMatchRequest {
+  return {
+    query: state.query.trim(),
+    profile_text: profileText,
+    filters: toApiFilters(state.filters),
+  }
+}
+
+export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactElement {
+  const [draft, dispatch] = useReducer(
+    searchDraftReducer,
     urlState,
-    draft,
-    profileText: profile?.text ?? '',
-    onError: setLocalError,
-  })
+    (state): SearchDraft => ({ query: state.query, filters: state.filters }),
+  )
+  const [profile, setProfile] = useState<ProfileDocument | null>(null)
+  const [selection, setSelection] = useState<PineconeSearchSelection | null>(null)
+  const [localError, setLocalError] = useState<ApiError | null>(null)
+  const [cvOnlyBestVisible, setCvOnlyBestVisible] = useState(false)
 
-  // Kept for the wire-normalization contract test to have a request to
-  // observe; corpus-meta data has no renderer, so its result/error is
-  // intentionally not surfaced here.
-  useCorpusMetaQuery()
+  const visibleView: JobsView =
+    !urlState.query && cvOnlyBestVisible ? 'best' : urlState.view
+  const bestMatchQuery = usePineconeSearchQuery(
+    visibleView === 'best' ? selection : null,
+  )
+  const bestData = bestMatchQuery.data?.data ?? null
+  const bestError =
+    localError ??
+    (bestMatchQuery.error instanceof ApiError ? bestMatchQuery.error : null)
+  const appliedHash = encodeJobsState(urlState)
+  const catalogueDraftState = useMemo(
+    () => buildCatalogueDraftState({
+      applied: urlState,
+      query: draft.query,
+      filters: draft.filters,
+    }),
+    [draft.filters, draft.query, urlState],
+  )
+  const catalogueDraftHash = encodeJobsState(catalogueDraftState)
 
-  const data = searchQuery.data?.data ?? null
-  const tookMs = searchQuery.data?.meta.tookMs
-  const busy = searchQuery.isFetching
-  const error = localError ?? (searchQuery.error instanceof ApiError ? searchQuery.error : null)
+  useEffect(() => {
+    dispatch({ type: 'route.changed', state: urlState })
+    if (urlState.query.trim()) setCvOnlyBestVisible(false)
 
-  function submitExample(example: string): void {
-    setQuery(example)
-    submit(example)
+    const entryId = currentEntryId()
+    setSelection((current) => {
+      if (urlState.view !== 'best' || !urlState.query.trim()) return null
+      if (current?.executionId === entryId) return current
+      return {
+        executionId: entryId,
+        request: buildBestMatchRequest(urlState, ''),
+      }
+    })
+  }, [urlState])
+
+  useEffect(() => {
+    if (visibleView !== 'all' || catalogueDraftHash === appliedHash) return
+    const timeout = window.setTimeout(() => {
+      navigate({ name: 'jobs', state: catalogueDraftState }, 'replace')
+    }, CATALOGUE_DEBOUNCE_MS)
+    return () => window.clearTimeout(timeout)
+  }, [appliedHash, catalogueDraftHash, catalogueDraftState, visibleView])
+
+  function commitCatalogueDraft(mode: 'push' | 'replace'): void {
+    setLocalError(null)
+    setCvOnlyBestVisible(false)
+    navigate({ name: 'jobs', state: catalogueDraftState }, mode)
+  }
+
+  function runBestMatch(queryOverride = draft.query): void {
+    const query = queryOverride.trim()
+    const profileText = profile?.text ?? ''
+    if (!query && !profileText) {
+      setLocalError(new ApiError({
+        status: 400,
+        code: 'EMPTY_SEARCH',
+        message: 'Enter a query or attach a CV.',
+      }))
+      return
+    }
+
+    setLocalError(null)
+    const next = normalizeJobsState({
+      ...urlState,
+      query,
+      view: query ? 'best' : 'all',
+      filters: draft.filters,
+      sort: 'newest',
+      page: 1,
+    })
+
+    let executionId: string
+    if (query) {
+      const before = currentEntryId()
+      navigate({ name: 'jobs', state: next }, 'push')
+      const after = currentEntryId()
+      executionId = after === before
+        ? renewCurrentHistoryEntry().entryId
+        : after
+    } else {
+      executionId = renewCurrentHistoryEntry().entryId
+    }
+
+    setCvOnlyBestVisible(!query)
+    setSelection({
+      executionId,
+      request: buildBestMatchRequest(next, profileText),
+    })
+  }
+
+  function submit(): void {
+    if (visibleView === 'all') {
+      commitCatalogueDraft('replace')
+      return
+    }
+    runBestMatch()
+  }
+
+  function changeView(view: JobsView): void {
+    if (view === 'best') {
+      runBestMatch()
+      return
+    }
+    setCvOnlyBestVisible(false)
+    setSelection(null)
+    navigate({ name: 'jobs', state: catalogueDraftState }, 'push')
+  }
+
+  async function selectProfile(file: File | null): Promise<void> {
+    if (!file) return
+    try {
+      const document = await readProfile(file)
+      setProfile(document)
+      setLocalError(null)
+      if (!urlState.query.trim()) setCvOnlyBestVisible(true)
+    } catch (failure) {
+      setProfile(null)
+      setCvOnlyBestVisible(false)
+      setLocalError(new ApiError({
+        status: 0,
+        code: failure instanceof ProfileReadError ? failure.code : 'READ_FAILED',
+        message:
+          failure instanceof Error
+            ? failure.message
+            : 'Could not read the selected file.',
+      }))
+    }
+  }
+
+  function clearFilters(): void {
+    const filters = emptyCatalogueFilters()
+    dispatch({ type: 'filters.changed', filters })
+    if (visibleView === 'all') {
+      navigate({
+        name: 'jobs',
+        state: normalizeJobsState({ ...urlState, query: draft.query, filters, page: 1 }),
+      }, 'push')
+    }
+  }
+
+  function clearQuery(): void {
+    dispatch({ type: 'query.changed', query: '' })
+    setCvOnlyBestVisible(false)
+    navigate({
+      name: 'jobs',
+      state: normalizeJobsState({ ...urlState, view: 'all', query: '', page: 1 }),
+    }, 'push')
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-6 pb-24">
-      <div className="pt-14 pb-10">
-        <h1 className="max-w-2xl font-mono text-2xl leading-tight font-semibold tracking-tight sm:text-3xl">
-          Ranked postings, and why each one ranked.
+    <section className="mx-auto w-full max-w-[var(--layout-content-max)] px-4 pb-20 sm:px-6">
+      <div className="pt-12 pb-2 sm:pt-16">
+        <h1 className="max-w-3xl font-mono text-2xl font-semibold leading-tight tracking-tight text-primary sm:text-4xl">
+          Ranked postings, <span className="text-accent">and why each one ranked.</span>
         </h1>
-        <p className="mt-3 max-w-xl text-sm leading-relaxed text-secondary">
-          Search the normalized corpus by free text, or attach a CV to search by profile.
-          Hard constraints run as metadata filters — they are never embedded.
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-secondary">
+          Search the normalized corpus by exact text or semantic relevance. Hard constraints stay structured and are never embedded.
         </p>
       </div>
 
-      <SearchForm
-        {...formProps}
-        profile={profile}
-        busy={busy}
-        onProfileSelect={selectProfile}
-        onProfileRemove={removeProfile}
-        onSubmit={submit}
-      />
-
-      {error && (
-        <PageState
-          kind="error"
-          title={error.message}
-          description={error.requestId ? `reference ${error.requestId}` : undefined}
-          compact
+      <div className="mt-7">
+        <SearchForm
+          view={visibleView}
+          query={draft.query}
+          profile={profile}
+          busy={bestMatchQuery.isFetching}
+          onQueryChange={(query) => dispatch({ type: 'query.changed', query })}
+          onProfileSelect={(file) => void selectProfile(file)}
+          onProfileRemove={() => {
+            setProfile(null)
+            setSelection(null)
+            if (!urlState.query.trim()) setCvOnlyBestVisible(false)
+          }}
+          onSubmit={submit}
         />
-      )}
-
-      {data && <SearchTrace data={data} tookMs={tookMs} busy={busy} />}
-
-      <div aria-live="polite">
-        <SearchResults data={data} busy={busy} />
-
-        {!data && !error && <SearchExamples onSelect={submitExample} />}
       </div>
 
-      <p className="mt-16 font-mono text-[11px] leading-relaxed text-tertiary">
-        Every result links to the posting on its original board. A query or profile runs the full
-        retrieve → rerank → respond pipeline over the live Pinecone index; leave both blank
-        and this lists the filtered corpus off disk instead, since there's nothing to embed.
-      </p>
-    </div>
+      <JobsViewSwitcher
+        view={visibleView}
+        bestEnabled={Boolean(draft.query.trim() || profile)}
+        onViewChange={changeView}
+      />
+
+      {visibleView === 'all' ? (
+        <AllPostingsView
+          state={urlState}
+          draftQuery={draft.query}
+          draftFilters={draft.filters}
+          onDraftFiltersChange={(filters) =>
+            dispatch({ type: 'filters.changed', filters })
+          }
+          onClearFilters={clearFilters}
+          onClearQuery={clearQuery}
+        />
+      ) : (
+        <div className="mt-10">
+          {bestError && (
+            <PageState
+              kind="error"
+              title="Could not search Best matches"
+              description={bestError.message}
+            />
+          )}
+          {!bestError && !bestData && (
+            <PageState
+              kind={bestMatchQuery.isFetching ? 'loading' : 'empty'}
+              title={
+                bestMatchQuery.isFetching
+                  ? 'Ranking postings'
+                  : 'Best matches has not run yet'
+              }
+              description={
+                bestMatchQuery.isFetching
+                  ? undefined
+                  : 'Best matches orders postings by semantic relevance. Run the search to rank the current query, attached profile, and filters.'
+              }
+            />
+          )}
+          {bestData && (
+            <>
+              <SearchTrace
+                data={bestData}
+                tookMs={bestMatchQuery.data?.meta.tookMs}
+                busy={bestMatchQuery.isFetching}
+              />
+              <SearchResults data={bestData} busy={bestMatchQuery.isFetching} />
+            </>
+          )}
+        </div>
+      )}
+    </section>
   )
 }

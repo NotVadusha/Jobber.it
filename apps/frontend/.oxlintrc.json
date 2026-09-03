@@ -57,6 +57,13 @@
         "no-restricted-imports": [
           "error",
           {
+            "paths": [
+              {
+                "name": "@/api/client",
+                "allowImportNames": ["ApiError"],
+                "message": "Features consume api/search hooks; only ApiError may come from the transport module."
+              }
+            ],
             "patterns": [
               {
                 "group": ["@/app/**"],
