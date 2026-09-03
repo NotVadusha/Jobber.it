@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 
-from pydantic import BaseModel, ConfigDict, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from . import providers
 
@@ -15,6 +15,10 @@ class Config(BaseModel):
 
     host: str = "127.0.0.1"
     port: int = 3000
+
+    rate_limit_window_seconds: int = Field(default=60, ge=1)
+    rate_limit_max_searches: int = Field(default=10, ge=0)
+    trusted_proxy_hops: int = Field(default=1, ge=1)
 
     anthropic_api_key: str | None = None
     deepseek_api_key: str | None = None

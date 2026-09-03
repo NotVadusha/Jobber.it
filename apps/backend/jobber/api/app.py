@@ -9,9 +9,10 @@ from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from .. import catalog, ranking
+from .. import catalog, config, ranking
 from ..logging import get_logger
 from ..postings import PostingSummary
+from . import ratelimit
 from .contracts import (
     BestMatchData,
     BestMatchRequest,
@@ -55,6 +56,53 @@ def _error_response(
             "Cache-Control": "no-store",
         },
     )
+
+
+@app.middleware("http")
+async def semantic_rate_limit(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]],
+) -> Response:
+    if request.url.path not in ratelimit.LIMITED_PATHS:
+        return await call_next(request)
+
+    settings = config.get()
+    address, entries = ratelimit.client_address(
+        request.headers.get("x-forwarded-for"),
+        request.client.host if request.client else None,
+        settings.trusted_proxy_hops,
+    )
+    key = ratelimit.client_key(address)
+    retry_after = ratelimit.check(
+        key,
+        now=time.monotonic(),
+        window_seconds=settings.rate_limit_window_seconds,
+        max_requests=settings.rate_limit_max_searches,
+    )
+    if retry_after is None:
+        return await call_next(request)
+
+    logger.warning(
+        "search_rate_limited",
+        "Semantic search rejected by the per-client window",
+        client_key=key,
+        forwarded_entries=entries,
+        path=request.url.path,
+        retry_after_seconds=retry_after,
+    )
+    response = _error_response(
+        request,
+        status_code=429,
+        code=ErrorCode.RATE_LIMITED,
+        message=(
+            f"Too many searches from this device. Wait {retry_after} "
+            f"second{'s' if retry_after != 1 else ''}, then search again "
+            "or browse all postings."
+        ),
+        details={"retry_after_seconds": retry_after},
+    )
+    response.headers["Retry-After"] = str(retry_after)
+    return response
 
 
 @app.middleware("http")
@@ -222,6 +270,7 @@ def query_postings(
     responses={
         400: {"model": ErrorResponse},
         422: {"model": ErrorResponse},
+        429: {"model": ErrorResponse},
         500: {"model": ErrorResponse},
         502: {"model": ErrorResponse},
         503: {"model": ErrorResponse},
@@ -233,6 +282,7 @@ def search(request: Request, payload: BestMatchRequest) -> SuccessResponse[BestM
         query=payload.query,
         profile_text=payload.profile_text,
         filters=payload.filters,
+        request_id=_request_id(request),
     )
     return SuccessResponse(
         data=BestMatchData(

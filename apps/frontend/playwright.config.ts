@@ -45,6 +45,7 @@ export default defineConfig({
         HOST: '127.0.0.1',
         PORT: '3100',
         LOG_LEVEL: 'DEBUG',
+        RATE_LIMIT_MAX_SEARCHES: '0',
       },
     },
     {
@@ -56,6 +57,24 @@ export default defineConfig({
       stderr: 'pipe',
       env: {
         API_PROXY_TARGET: 'http://127.0.0.1:3100',
+      },
+    },
+    {
+      command: 'uv run --project ../backend jobber',
+      url: 'http://127.0.0.1:3101/api/meta',
+      timeout: 120_000,
+      reuseExistingServer: false,
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env: {
+        DATABASE_URL: databaseUrl,
+        PINECONE_API_KEY: 'e2e-not-used',
+        OPENAI_API_KEY: 'e2e-not-used',
+        HOST: '127.0.0.1',
+        PORT: '3101',
+        LOG_LEVEL: 'DEBUG',
+        RATE_LIMIT_MAX_SEARCHES: '3',
+        RATE_LIMIT_WINDOW_SECONDS: '60',
       },
     },
   ],
