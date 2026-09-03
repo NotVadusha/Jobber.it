@@ -8,6 +8,10 @@ const metaWire = {
   data: {
     corpus_size: 321,
     sources: ['greenhouse', 'djinni'],
+    source_counts: [
+      { source: 'greenhouse', count: 201 },
+      { source: 'djinni', count: 120 },
+    ],
     retrieval: 'hybrid+rerank',
   },
   meta: { request_id: 'req-meta' },
@@ -81,8 +85,8 @@ test('submits query profile and filters as separate wire fields', async ({ page 
     await route.fulfill({ status: 200, contentType: 'application/json', json: searchWire })
   })
   await page.goto('/')
-  await page.getByRole('textbox', { name: 'Query' }).fill('postgres')
-  await page.getByRole('button', { name: 'Search' }).click()
+  await page.getByRole('textbox', { name: 'Search postings' }).fill('postgres')
+  await page.getByRole('button', { name: 'Best matches' }).click()
 
   await expect(page.getByText('Nothing cleared the filters.')).toBeVisible()
   expect(body).toMatchObject({
@@ -97,8 +101,8 @@ test('renders results, highlighted stack hits and the retrieval trace', async ({
     await route.fulfill({ status: 200, contentType: 'application/json', json: resultWire })
   })
   await page.goto('/')
-  await page.getByRole('textbox', { name: 'Query' }).fill('postgres')
-  await page.getByRole('button', { name: 'Search' }).click()
+  await page.getByRole('textbox', { name: 'Search postings' }).fill('postgres')
+  await page.getByRole('button', { name: 'Best matches' }).click()
 
   const result = page.getByRole('listitem').filter({ hasText: 'Senior Backend Engineer' })
   await expect(result).toBeVisible()
@@ -128,8 +132,8 @@ test('renders a safe structured error and its request reference', async ({ page 
     })
   })
   await page.goto('/')
-  await page.getByRole('textbox', { name: 'Query' }).fill('postgres')
-  await page.getByRole('button', { name: 'Search' }).click()
+  await page.getByRole('textbox', { name: 'Search postings' }).fill('postgres')
+  await page.getByRole('button', { name: 'Best matches' }).click()
   await expect(page.getByRole('alert')).toContainText('temporarily unavailable')
   await expect(page.getByRole('alert')).toContainText('req-error')
 })
@@ -147,8 +151,8 @@ test('survives a malformed error payload without crashing', async ({ page }) => 
     })
   })
   await page.goto('/')
-  await page.getByRole('textbox', { name: 'Query' }).fill('postgres')
-  await page.getByRole('button', { name: 'Search' }).click()
+  await page.getByRole('textbox', { name: 'Search postings' }).fill('postgres')
+  await page.getByRole('button', { name: 'Best matches' }).click()
 
   await expect(page.getByRole('alert')).toContainText('unreadable error')
   await expect(page.getByRole('alert')).toContainText('req-malformed')
@@ -168,11 +172,11 @@ test('replacing an in-flight search raises no unhandled browser error', async ({
   })
 
   await page.goto('/')
-  const input = page.getByRole('textbox', { name: 'Query' })
+  const input = page.getByRole('textbox', { name: 'Search postings' })
   await input.fill('postgres')
-  await page.getByRole('button', { name: 'Search' }).click()
+  await page.getByRole('button', { name: 'Best matches' }).click()
   await input.fill('kafka')
-  await page.getByRole('button', { name: 'Search' }).click()
+  await page.getByRole('button', { name: 'Best matches' }).click()
 
   await expect(page.getByRole('listitem').filter({ hasText: 'Senior Backend Engineer' }))
     .toBeVisible()
@@ -181,7 +185,7 @@ test('replacing an in-flight search raises no unhandled browser error', async ({
 
 test('enforces the 500 character query limit', async ({ page }) => {
   await page.goto('/')
-  const input = page.getByRole('textbox', { name: 'Query' })
+  const input = page.getByRole('textbox', { name: 'Search postings' })
   await input.fill('x'.repeat(501))
   await expect(input).toHaveValue('x'.repeat(500))
 })
@@ -210,7 +214,7 @@ test('extracts text from an attached PDF and sends it as profile text', async ({
   await page.getByLabel(/Attach a CV/).setInputFiles(PDF_FIXTURE)
   await expect(page.getByText('profile.pdf')).toBeVisible()
 
-  await page.getByRole('button', { name: 'Search' }).click()
+  await page.getByRole('button', { name: 'Best matches' }).click()
   await expect(page.getByText('Nothing cleared the filters.')).toBeVisible()
   expect(body?.profile_text).toContain('PostgreSQL and Python experience')
 })
@@ -223,13 +227,13 @@ test('never submits an empty search', async ({ page }) => {
   })
 
   await page.goto('/')
-  const submit = page.getByRole('button', { name: 'Search' })
+  const submit = page.getByRole('button', { name: 'Best matches' })
   await expect(submit).toBeDisabled()
 
-  await page.getByRole('textbox', { name: 'Query' }).fill('   ')
+  await page.getByRole('textbox', { name: 'Search postings' }).fill('   ')
   await expect(submit).toBeDisabled()
 
-  await page.getByRole('textbox', { name: 'Query' }).fill('postgres')
+  await page.getByRole('textbox', { name: 'Search postings' }).fill('postgres')
   await expect(submit).toBeEnabled()
   expect(requested).toBe(false)
 })

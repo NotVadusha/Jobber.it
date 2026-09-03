@@ -215,7 +215,7 @@ test('no horizontal overflow and focused content clears the sticky header across
     const innerWidth = await page.evaluate(() => window.innerWidth)
     expect(scrollWidth, `scrollWidth <= innerWidth at ${width}px`).toBeLessThanOrEqual(innerWidth)
 
-    const queryField = page.getByRole('textbox', { name: 'Query' })
+    const queryField = page.getByRole('textbox', { name: 'Search postings' })
     await queryField.focus()
     await expect(queryField).toBeFocused()
 
@@ -313,7 +313,7 @@ test('empty navigation and footer groups render no dead chrome', async ({ page }
   await expect(page.getByRole('button', { name: /Switch to (dark|light) theme/ })).toHaveCount(1)
 
   await expect(page.locator('footer p')).toHaveCount(1)
-  await expect(page.getByText('aggregates public postings')).toBeVisible()
+  await expect(page.locator('footer').getByText('aggregates public postings')).toBeVisible()
 })
 
 // Task 5: ThemeProvider moved from AppShell.tsx into main.tsx alongside the
