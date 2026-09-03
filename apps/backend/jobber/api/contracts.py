@@ -5,7 +5,7 @@ from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from ..postings import BestMatchPosting, PostingFilters, SourceId
+from ..postings import BestMatchPosting, CatalogueSort, PostingFilters, SourceId
 from ..ranking import AppliedFilter, TraceNode
 
 DataT = TypeVar("DataT")
@@ -18,6 +18,7 @@ class ErrorCode(StrEnum):
     VALIDATION_ERROR = "VALIDATION_ERROR"
     RATE_LIMITED = "RATE_LIMITED"
     SEARCH_UNAVAILABLE = "SEARCH_UNAVAILABLE"
+    CATALOGUE_UNAVAILABLE = "CATALOGUE_UNAVAILABLE"
     INTERNAL_ERROR = "INTERNAL_ERROR"
 
 
@@ -60,11 +61,19 @@ class ErrorResponse(BaseModel):
     meta: ResponseMeta
 
 
+class SourceCountData(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source: SourceId
+    count: int = Field(ge=0)
+
+
 class MetaData(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     corpus_size: int = Field(ge=0)
     sources: list[SourceId]
+    source_counts: list[SourceCountData]
     retrieval: str
 
 
@@ -78,6 +87,20 @@ class BestMatchRequest(BaseModel):
     @field_validator("query", "profile_text", mode="before")
     @classmethod
     def trim_search_text(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
+
+
+class CatalogueQueryRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    query: str = Field(default="", max_length=500)
+    filters: PostingFilters = Field(default_factory=PostingFilters)
+    sort: CatalogueSort = CatalogueSort.NEWEST
+    page: int = Field(default=1, ge=1, le=9_007_199_254_740_991)
+
+    @field_validator("query", mode="before")
+    @classmethod
+    def trim_query(cls, value: object) -> object:
         return value.strip() if isinstance(value, str) else value
 
 

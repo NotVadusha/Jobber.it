@@ -14,7 +14,7 @@ export default defineConfig({
   // Same-origin /api as in prod: no API base URL, no CORS.
   server: {
     proxy: {
-      '/api': 'http://127.0.0.1:3000',
+      '/api': process.env.API_PROXY_TARGET ?? 'http://127.0.0.1:3000',
     },
   },
 })

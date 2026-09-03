@@ -239,6 +239,24 @@ Filters are explicit UI controls, not parsed out of the query, and Pinecone appl
 
 The SPA shows the retrieval trace, the query's tokens (tokenized the way the sparse side will, so `c++`, `c#` and `node.js` survive), and the filters that were applied — a hard filter removes matching jobs with no trace in the results. Profile upload is client-side: `File.text()` for `.txt`/`.md`, `pdfjs-dist` lazily imported for `.pdf`; a scanned PDF with no text layer is rejected by name rather than silently searched on an empty profile.
 
+### Catalogue E2E
+
+`POST /api/postings/query` is the exhaustive PostgreSQL interface — lexical filter over every
+live posting, never a relevance sort; `/api/search` above remains the semantic Best-match path.
+Its only written coverage is a real browser-to-database Playwright suite, so running it needs:
+
+1. PostgreSQL 16+ and the `psql` client installed locally.
+2. `E2E_DATABASE_URL` resolving to a dedicated database whose name ends in `_e2e` — never a
+   development or production database.
+3. `make e2e`, which migrates and truncates only that database, loads deterministic fixture
+   data, starts isolated app servers, and runs the suite in Chromium.
+4. The E2E backend runs with dummy provider keys and must never call Pinecone or an LLM.
+
+```bash
+createdb jobber_e2e
+E2E_DATABASE_URL=postgresql:///jobber_e2e make e2e
+```
+
 ## Architecture and contracts
 
 [CONTEXT.md](CONTEXT.md) holds the canonical domain vocabulary. The surprising decisions are
@@ -254,7 +272,7 @@ change usually lands in:
 | Browser request/response models | [api/contracts.py](apps/backend/jobber/api/contracts.py) |
 | Posting and hard-filter value models | [postings.py](apps/backend/jobber/postings.py) |
 | Semantic ranking orchestration | [ranking.py](apps/backend/jobber/ranking.py) |
-| Corpus metadata (cached) | [catalog.py](apps/backend/jobber/catalog.py) |
+| Corpus metadata (cached) and the PostgreSQL catalogue query | [catalog.py](apps/backend/jobber/catalog.py) |
 | Pinecone adapter | [pinecone.py](apps/backend/jobber/pinecone.py) |
 | Structured JSON logging | [logging.py](apps/backend/jobber/logging.py) |
 | Axios transport, camelCase, `ApiError` | [api/client.ts](apps/frontend/src/api/client.ts) |

@@ -10,6 +10,27 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: jobber_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d jobber_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/jobber_e2e
+      E2E_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/jobber_e2e
+      PINECONE_API_KEY: e2e-not-used
+      OPENAI_API_KEY: e2e-not-used
+
     steps:
       - uses: actions/checkout@v4
 
