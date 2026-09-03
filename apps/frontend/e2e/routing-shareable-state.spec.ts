@@ -49,7 +49,7 @@ test.describe('canonical jobs URL', () => {
 
   test('a bare query defaults to best matches and omits view', async ({ page }) => {
     await page.goto('/#/jobs?q=python')
-    await expect(page).toHaveURL('http://127.0.0.1:5173/#/jobs?q=python')
+    await expect(page).toHaveURL('/#/jobs?q=python')
   })
 
   test('view=best with no query collapses to plain jobs', async ({ page }) => {
@@ -59,7 +59,7 @@ test.describe('canonical jobs URL', () => {
 
   test('explicit view=all is preserved alongside a query', async ({ page }) => {
     await page.goto('/#/jobs?view=all&q=python')
-    await expect(page).toHaveURL('http://127.0.0.1:5173/#/jobs?view=all&q=python')
+    await expect(page).toHaveURL('/#/jobs?view=all&q=python')
   })
 
   test('duplicate and unordered multi-values canonicalize into fixed order', async ({ page }) => {
@@ -90,7 +90,7 @@ test.describe('canonical jobs URL', () => {
 
   test('sort and page are stripped from best-match state', async ({ page }) => {
     await page.goto('/#/jobs?q=python&sort=salary&page=3')
-    await expect(page).toHaveURL('http://127.0.0.1:5173/#/jobs?q=python')
+    await expect(page).toHaveURL('/#/jobs?q=python')
   })
 
   test('the full parameter table round-trips in canonical order', async ({ page }) => {
@@ -99,7 +99,7 @@ test.describe('canonical jobs URL', () => {
         '&experience=5&seniority=lead,senior&workplace=hybrid,remote&q=postgres%20kafka&view=all',
     )
     await expect(page).toHaveURL(
-      'http://127.0.0.1:5173/#/jobs?view=all&q=postgres%20kafka&workplace=remote,hybrid' +
+      '/#/jobs?view=all&q=postgres%20kafka&workplace=remote,hybrid' +
         '&seniority=senior,lead&experience=5&minSalary=90000&undisclosedSalary=1' +
         '&posted=7d&source=djinni,linkedin',
     )
