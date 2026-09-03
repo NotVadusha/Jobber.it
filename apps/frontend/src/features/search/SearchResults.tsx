@@ -1,5 +1,6 @@
 import type { BestMatchResponse } from '@/api/search'
-import { formatPostedMonth, formatSalary, splitTerms } from '@/lib/format'
+import { formatCompensation, useCompensationPeriod } from '@/features/jobs/compensation'
+import { formatPostedMonth, splitTerms } from '@/lib/format'
 import { PageState } from '@/ui/PageState'
 
 type BestMatchData = BestMatchResponse['data']
@@ -15,6 +16,7 @@ function Result({ result, rank, tokens }: {
   rank: number
   tokens: string[]
 }) {
+  const { period } = useCompensationPeriod()
   const place = result.location
   const policy = result.remotePolicy !== 'unknown' && result.remotePolicy
   const facts = [
@@ -22,7 +24,7 @@ function Result({ result, rank, tokens }: {
     policy && policy !== place?.toLowerCase() && policy,
     result.seniority !== 'unknown' && result.seniority,
     result.yearsRequired != null && `${result.yearsRequired}y+`,
-    formatSalary(result.salaryMin, result.salaryMax),
+    formatCompensation(result.salaryMin, result.salaryMax, period),
     result.source,
     formatPostedMonth(result.postedAt),
   ].filter(Boolean)
