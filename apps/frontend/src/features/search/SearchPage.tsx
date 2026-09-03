@@ -16,7 +16,9 @@ import {
   buildCatalogueDraftState,
   emptyCatalogueFilters,
 } from '@/features/catalogue/catalogue-state'
-import { ProfileReadError, readProfile, type ProfileDocument } from '@/features/cv/read-profile'
+import { CvDropZone } from '@/features/cv/CvDropZone'
+import type { ProfileReadError, ProfileDocument } from '@/features/cv/read-profile'
+import { CopyLinkButton } from '@/features/jobs/CopyLinkButton'
 import { BestMatchView } from '@/features/search/BestMatchView'
 import { JobsViewSwitcher } from '@/features/search/JobsViewSwitcher'
 import { SearchForm } from '@/features/search/SearchForm'
@@ -28,8 +30,12 @@ import {
   currentEntryId,
   renewCurrentHistoryEntry,
 } from '@/routing/navigation-context'
+import { canShareJobsSearch } from '@/routing/permalink'
 import { PageState } from '@/ui/PageState'
 import { useToast } from '@/ui/toast'
+
+const ACTION_CLASS =
+  'min-h-10 rounded-sm border border-subtle px-4 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-secondary hover:border-strong hover:text-primary'
 
 type SearchDraft = {
   query: string
@@ -193,25 +199,19 @@ export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactEleme
     navigate({ name: 'jobs', state: catalogueDraftState }, 'push')
   }
 
-  const selectProfile = async (file: File | null): Promise<void> => {
-    if (!file) return
-    try {
-      const document = await readProfile(file)
-      setProfile(document)
-      setLocalError(null)
-      if (!urlState.query.trim()) setCvOnlyBestVisible(true)
-    } catch (failure) {
-      setProfile(null)
-      setCvOnlyBestVisible(false)
-      setLocalError(new ApiError({
-        status: 0,
-        code: failure instanceof ProfileReadError ? failure.code : 'READ_FAILED',
-        message:
-          failure instanceof Error
-            ? failure.message
-            : 'Could not read the selected file.',
-      }))
+  const onProfileChange = (document: ProfileDocument | null): void => {
+    setProfile(document)
+    if (!urlState.query.trim()) setCvOnlyBestVisible(document !== null)
+    if (document === null && profile !== null) {
+      showToast({ message: 'Profile removed', tone: 'info' })
     }
+  }
+
+  const onReadError = (failure: ProfileReadError | null): void => {
+    setLocalError(
+      failure &&
+        new ApiError({ status: 0, code: failure.code, message: failure.message }),
+    )
   }
 
   const clearFilters = (): void => {
@@ -263,16 +263,16 @@ export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactEleme
         <SearchForm
           view={visibleView}
           query={draft.query}
-          profile={profile}
+          hasProfile={profile !== null}
+          cvSlot={
+            <CvDropZone
+              profile={profile}
+              onProfileChange={onProfileChange}
+              onReadError={onReadError}
+            />
+          }
           busy={bestMatchFetching}
           onQueryChange={(query) => dispatch({ type: 'query.changed', query })}
-          onProfileSelect={(file) => void selectProfile(file)}
-          onProfileRemove={() => {
-            setProfile(null)
-            setSelection(null)
-            if (!urlState.query.trim()) setCvOnlyBestVisible(false)
-            showToast({ message: 'Profile removed', tone: 'info' })
-          }}
           onSubmit={submit}
         />
       </div>
@@ -290,6 +290,19 @@ export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactEleme
         bestEnabled={Boolean(draft.query.trim() || profile)}
         onViewChange={changeView}
       />
+
+      {canShareJobsSearch({ query: urlState.query, hasProfile: profile !== null }) ? (
+        <CopyLinkButton
+          route={{ name: 'jobs', state: urlState }}
+          label="Copy search link"
+          className={ACTION_CLASS}
+        />
+      ) : (
+        <p className="max-w-prose text-xs leading-relaxed text-tertiary">
+          This search used only your CV. A link cannot carry CV data, so there is nothing to
+          share. Type a query to share the search.
+        </p>
+      )}
 
       {visibleView === 'all' ? (
         <AllPostingsView

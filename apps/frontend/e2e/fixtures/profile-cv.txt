@@ -1,0 +1,8 @@
+Synthetic Candidate — Backend Engineer
+
+Experience
+- Five years building Python and TypeScript backend services.
+- PostgreSQL, Redis, Kubernetes, event-driven pipelines.
+- Led migration of a monolith to service boundaries.
+
+Beacon: ZZBEACONCVZZ

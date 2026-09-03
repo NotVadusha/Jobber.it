@@ -289,6 +289,7 @@ def meta(request: Request) -> SuccessResponse[MetaData]:
                 for item in stats.source_counts
             ],
             retrieval="hybrid+rerank",
+            rewrite_provider=ranking.REWRITE_PROVIDER,
         ),
         meta=ResponseMeta(request_id=_request_id(request)),
     )

@@ -21,6 +21,7 @@ logger = get_logger(service="backend", module=__name__)
 
 REWRITE_TIMEOUT_SECONDS = 10.0
 SEARCH_DEADLINE_SECONDS = 60.0
+REWRITE_PROVIDER = profile.PROVIDER
 
 _POSTED_WITHIN_LABEL = {
     PostedWithin.DAY: "last 24 hours",
@@ -85,10 +86,6 @@ class StageEvent:
     node: TraceNode | None = None
 
 
-def _search_text(query: str, profile_text: str) -> str:
-    return "\n\n".join(part for part in (query.strip(), profile_text.strip()) if part)
-
-
 def _applied_filters(filters: PostingFilters) -> tuple[AppliedFilter, ...]:
     applied: list[AppliedFilter] = []
 
@@ -127,23 +124,47 @@ def _applied_filters(filters: PostingFilters) -> tuple[AppliedFilter, ...]:
     return tuple(applied)
 
 
-def _rewrite(text: str, request_id: str) -> tuple[profile.Query, TraceStatus, str]:
+def _rewrite(
+    goal: str,
+    background: str,
+    request_id: str,
+) -> tuple[profile.Query, TraceStatus, str]:
+    present = " + ".join(
+        name for name, value in (("goal", goal), ("background", background)) if value
+    )
     try:
-        rewritten = profile.to_query(text, timeout=REWRITE_TIMEOUT_SECONDS)
+        rewritten = profile.to_query(
+            goal=goal,
+            background=background,
+            timeout=REWRITE_TIMEOUT_SECONDS,
+        )
     except Exception as error:
+        if not goal:
+            logger.warning(
+                "rewrite_unavailable",
+                "CV-only search stopped before index retrieval because rewrite failed",
+                request_id=request_id,
+                error_type=type(error).__name__,
+            )
+            raise SearchUnavailable() from error
+
         logger.warning(
             "search_rewrite_degraded",
-            "Query rewrite failed; searching the raw text instead",
+            "Query rewrite failed; searching the raw goal instead",
             request_id=request_id,
             error_type=type(error).__name__,
         )
         return (
-            profile.Query(requirements_text=text, stack=[]),
+            profile.Query(requirements_text=goal, stack=[]),
             TraceStatus.SKIPPED,
-            "raw search text; rewrite unavailable",
+            "raw goal; rewrite unavailable",
         )
 
-    return rewritten, TraceStatus.RAN, providers.PROVIDERS[providers.DEFAULT].model
+    return (
+        rewritten,
+        TraceStatus.RAN,
+        f"{providers.PROVIDERS[providers.DEFAULT].model} · {present}",
+    )
 
 
 def _best_match(
@@ -166,10 +187,11 @@ def ranked_stages(
     filters: PostingFilters,
     request_id: str,
 ) -> Generator[StageEvent, None, RankingSnapshot]:
-    text = _search_text(query, profile_text)
-    if not text:
+    goal = query.strip()
+    background = profile_text.strip()
+    if not goal and not background:
         raise EmptySearch
-    return _stages(text, filters, request_id)
+    return _stages(goal, background, filters, request_id)
 
 
 def rank_best_matches(
@@ -193,7 +215,8 @@ def rank_best_matches(
 
 
 def _stages(
-    text: str,
+    goal: str,
+    background: str,
     filters: PostingFilters,
     request_id: str,
 ) -> Generator[StageEvent, None, RankingSnapshot]:
@@ -248,7 +271,7 @@ def _stages(
     try:
         yield StageEvent(stage=RankingStage.REWRITE)
         at = begin(RankingStage.REWRITE)
-        rewritten, rewrite_status, rewrite_detail = _rewrite(text, request_id)
+        rewritten, rewrite_status, rewrite_detail = _rewrite(goal, background, request_id)
         terms = tuple(sorted({token.strip() for token in rewritten.stack if token.strip()}))
         yield record(
             RankingStage.REWRITE,

@@ -75,6 +75,7 @@ class MetaData(BaseModel):
     sources: list[SourceId]
     source_counts: list[SourceCountData]
     retrieval: str
+    rewrite_provider: str
 
 
 class BestMatchRequest(BaseModel):

@@ -242,6 +242,30 @@
           }
         ]
       }
+    },
+    {
+      "files": [
+        "src/features/cv/**"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/app/**",
+                  "@/features/search/**",
+                  "@/features/catalogue/**",
+                  "@/features/job-detail/**",
+                  "@/features/saved/**"
+                ],
+                "message": "The CV feature is read by the search page; it does not read the screens that use it."
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

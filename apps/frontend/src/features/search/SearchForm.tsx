@@ -1,7 +1,5 @@
-import { useEffect, useRef, type ReactElement } from 'react'
+import { useEffect, useRef, type ReactElement, type ReactNode } from 'react'
 
-import type { ProfileDocument } from '@/features/cv/read-profile'
-import { Label } from '@/features/search/Label'
 import type { JobsView } from '@/routing/jobs-model'
 
 export const QUERY_MAX_LENGTH = 500
@@ -9,11 +7,10 @@ export const QUERY_MAX_LENGTH = 500
 export type SearchFormProps = {
   view: JobsView
   query: string
-  profile: ProfileDocument | null
+  hasProfile: boolean
+  cvSlot: ReactNode
   busy: boolean
   onQueryChange(value: string): void
-  onProfileSelect(file: File | null): void
-  onProfileRemove(): void
   onSubmit(): void
 }
 
@@ -26,15 +23,13 @@ const isTextEntryTarget = (target: EventTarget | null): boolean => {
 export const SearchForm = ({
   view,
   query,
-  profile,
+  hasProfile,
+  cvSlot,
   busy,
   onQueryChange,
-  onProfileSelect,
-  onProfileRemove,
   onSubmit,
 }: SearchFormProps): ReactElement => {
   const queryRef = useRef<HTMLInputElement>(null)
-  const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const focusSearch = (event: KeyboardEvent) => {
@@ -89,43 +84,14 @@ export const SearchForm = ({
         </kbd>
         <button
           type="submit"
-          disabled={view === 'best' && (busy || (!query.trim() && !profile))}
+          disabled={view === 'best' && (busy || (!query.trim() && !hasProfile))}
           className="min-h-10 shrink-0 rounded-sm bg-accent px-3 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-ink transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
         >
           {buttonLabel}
         </button>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <Label>Profile</Label>
-        <label className="cursor-pointer rounded-sm border border-dashed border-strong px-3 py-2 font-mono text-xs text-secondary transition-colors hover:border-accent hover:text-accent">
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".txt,.md,.pdf,text/plain,text/markdown,application/pdf"
-            onChange={(event) => onProfileSelect(event.currentTarget.files?.[0] ?? null)}
-            className="sr-only"
-          />
-          {profile
-            ? `${profile.name} · ${profile.text.length.toLocaleString()} chars`
-            : 'Attach a CV (.pdf, .txt, .md)'}
-        </label>
-        {profile && (
-          <button
-            type="button"
-            onClick={() => {
-              if (fileRef.current) fileRef.current.value = ''
-              onProfileRemove()
-            }}
-            className="min-h-9 font-mono text-xs text-secondary underline underline-offset-4 hover:text-primary"
-          >
-            Remove
-          </button>
-        )}
-        <span className="text-xs leading-relaxed text-tertiary">
-          Used only for Best matches and never added to a shared link.
-        </span>
-      </div>
+      <div className="mt-4">{cvSlot}</div>
     </form>
   )
 }

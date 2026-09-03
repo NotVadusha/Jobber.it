@@ -223,17 +223,3 @@ test('uses an accessible mobile filter dialog and never overflows 320px', async 
   }))
   expect(sizes.scroll).toBeLessThanOrEqual(sizes.client)
 })
-
-test('keeps CV identity out of the URL and storage during the preserved pre-Plan-9 flow', async ({ page }) => {
-  await openJobs(page)
-  await page.locator('input[type=file]').setInputFiles('e2e/fixtures/profile.pdf')
-  await expect(page.getByText(/profile\.pdf/)).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Best matches' })).toHaveAttribute('aria-pressed', 'true')
-
-  const state = await page.evaluate(() => ({
-    href: window.location.href,
-    storage: { ...window.localStorage },
-  }))
-  expect(state.href).not.toContain('profile.pdf')
-  expect(JSON.stringify(state.storage)).not.toContain('profile.pdf')
-})

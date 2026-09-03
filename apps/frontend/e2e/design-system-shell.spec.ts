@@ -1,5 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
+import { grantCvConsent } from './harness/cv-consent'
+
 const THEME_KEY = 'jobber.theme.v1'
 
 const readThemeState = async (page: { evaluate: <T>(fn: () => T) => Promise<T> }) => {
@@ -328,16 +330,17 @@ test('navigation and footer groups contain only active routes', async ({ page })
 // end-to-end against '/', so it doubles as the regression check for that move.
 
 const attachAndRemoveProfile = async (page: Page): Promise<void> => {
-  await page.getByLabel(/Attach a CV/).setInputFiles({
+  await page.getByLabel(/Drop a CV here, or choose a file/).setInputFiles({
     name: 'profile.txt',
     mimeType: 'text/plain',
     buffer: Buffer.from('PostgreSQL and Python experience'),
   })
-  await expect(page.getByText('profile.txt')).toBeVisible()
+  await expect(page.getByText('profile.txt').first()).toBeVisible()
   await page.getByRole('button', { name: 'Remove' }).click()
 }
 
 test('toast replacement and close use one polite live region', async ({ page }) => {
+  await grantCvConsent(page)
   await page.goto('/')
 
   await attachAndRemoveProfile(page)
@@ -405,6 +408,7 @@ const parseCssDurationMs = (value: string): number => {
 
 test('reduced motion disables nonessential transition and animation', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
+  await grantCvConsent(page)
   await page.goto('/')
 
   await attachAndRemoveProfile(page)

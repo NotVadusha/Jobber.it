@@ -397,6 +397,10 @@
             "title": "Retrieval",
             "type": "string"
           },
+          "rewrite_provider": {
+            "title": "Rewrite Provider",
+            "type": "string"
+          },
           "source_counts": {
             "items": {
               "$ref": "#/components/schemas/SourceCountData"
@@ -416,7 +420,8 @@
           "corpus_size",
           "sources",
           "source_counts",
-          "retrieval"
+          "retrieval",
+          "rewrite_provider"
         ],
         "title": "MetaData",
         "type": "object"
