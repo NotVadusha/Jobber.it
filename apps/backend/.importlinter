@@ -9,6 +9,7 @@ source_modules =
     jobber.api
 forbidden_modules =
     jobber.db
+    jobber.evidence
     jobber.pinecone
     jobber.pipeline
     jobber.profile
@@ -20,6 +21,7 @@ type = forbidden
 source_modules =
     jobber.catalog
     jobber.db
+    jobber.evidence
     jobber.pinecone
     jobber.pipeline
     jobber.postings

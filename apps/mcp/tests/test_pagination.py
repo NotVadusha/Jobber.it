@@ -1,6 +1,5 @@
 import pytest
 
-from jobber import pinecone
 from jobber_mcp import server
 
 SECTIONS = ("requirements", "responsibilities", "description")
@@ -21,7 +20,7 @@ def hits(monkeypatch):
 
 
 def test_dedupe_collapses_every_section_of_a_posting_into_one_card():
-    out = pinecone.dedupe_by_posting(chunks(3))
+    out = server._one_card_per_posting(chunks(3))
     assert [h["posting_id"] for h in out] == ["p0", "p1", "p2"]
 
 
