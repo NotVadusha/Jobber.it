@@ -37,7 +37,10 @@ export const BestMatchResults = ({
   return (
     <>
       <p className="mt-8 max-w-2xl text-xs leading-relaxed text-tertiary">
-        {UNCALIBRATED_SCORE_NOTICE}
+        {UNCALIBRATED_SCORE_NOTICE}{' '}
+        <a className="text-accent underline underline-offset-4" href="#/ranking">
+          What this number means
+        </a>
       </p>
 
       <ol className="mt-4 flex flex-col gap-3">

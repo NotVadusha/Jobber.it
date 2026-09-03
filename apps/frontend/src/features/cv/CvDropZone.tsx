@@ -172,12 +172,11 @@ export const CvDropZone = ({
         )}
       </div>
 
-      <details className="rounded-sm border border-subtle bg-surface-raised px-3 py-2">
-        <summary className="cursor-pointer font-mono text-[11px] uppercase tracking-[0.12em] text-secondary">
+      <p className="text-xs text-tertiary">
+        <a className="text-accent underline underline-offset-4" href="#/privacy">
           What happens to this file
-        </summary>
-        <CvDisclosureFacts provider={provider} />
-      </details>
+        </a>
+      </p>
     </section>
   )
 }

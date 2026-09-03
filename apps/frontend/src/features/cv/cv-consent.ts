@@ -1,6 +1,8 @@
 import { useCallback, useSyncExternalStore } from 'react'
 
-export const CV_CONSENT_STORAGE_KEY = 'jobber.cv-consent.v1'
+import { STORAGE_KEYS } from '@/lib/storage-keys'
+
+export const CV_CONSENT_STORAGE_KEY = STORAGE_KEYS.cvConsent
 
 const GRANTED = 'granted'
 

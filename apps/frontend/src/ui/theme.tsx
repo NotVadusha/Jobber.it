@@ -9,9 +9,11 @@ import {
   type ReactNode,
 } from 'react'
 
+import { STORAGE_KEYS } from '@/lib/storage-keys'
+
 export type Theme = 'light' | 'dark'
 
-export const THEME_STORAGE_KEY = 'jobber.theme.v1'
+export const THEME_STORAGE_KEY = STORAGE_KEYS.theme
 export const LIGHT_THEME_QUERY = '(prefers-color-scheme: light)'
 
 type ThemeState = {

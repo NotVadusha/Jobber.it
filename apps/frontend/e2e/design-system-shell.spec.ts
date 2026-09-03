@@ -311,6 +311,9 @@ test('navigation and footer groups contain only active routes', async ({ page })
   await page.goto('/')
 
   await expect(page.getByRole('navigation', { name: 'Primary' }).getByRole('link')).toHaveText([
+    'Ranking',
+    'Changelog',
+    'About',
     'Saved',
   ])
   await expect(page.getByRole('button', { name: /Switch to (dark|light) theme/ })).toHaveCount(1)
@@ -320,8 +323,16 @@ test('navigation and footer groups contain only active routes', async ({ page })
     '#/saved',
   )
   await expect(page.locator('footer').getByText('aggregates public postings')).toBeVisible()
-  for (const name of ['Ranking', 'Privacy', 'Changelog', 'About']) {
-    await expect(page.locator('footer').getByRole('link', { name })).toHaveCount(0)
+  for (const [name, href] of [
+    ['How ranking works', '#/ranking'],
+    ['CV parsing and privacy', '#/privacy'],
+    ['Changelog', '#/changelog'],
+    ['About', '#/about'],
+  ] as const) {
+    await expect(page.locator('footer').getByRole('link', { name, exact: true }).first()).toHaveAttribute(
+      'href',
+      href,
+    )
   }
 })
 

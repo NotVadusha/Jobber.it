@@ -255,7 +255,11 @@ export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactEleme
           Ranked postings, <span className="text-accent">and why each one ranked.</span>
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-secondary">
-          Search the normalized corpus by exact text or semantic relevance. Hard constraints stay structured and are never embedded.
+          Search the normalized corpus by exact text or semantic relevance. Hard constraints stay
+          structured and are never embedded.{' '}
+          <a className="text-accent underline underline-offset-4" href="#/ranking">
+            How ranking works
+          </a>
         </p>
       </div>
 

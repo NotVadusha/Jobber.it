@@ -36,7 +36,12 @@ export const JobRankingContext = ({ postingId }: { postingId: string }): ReactEl
 
       <RankingEvidence result={context.result} summary="Matched terms and sections" />
 
-      <p className="mt-3 max-w-2xl text-xs leading-relaxed text-tertiary">{CONTEXT_NOTICE}</p>
+      <p className="mt-3 max-w-2xl text-xs leading-relaxed text-tertiary">
+        {CONTEXT_NOTICE}{' '}
+        <a className="text-accent underline underline-offset-4" href="#/ranking">
+          What this number means
+        </a>
+      </p>
     </section>
   )
 }

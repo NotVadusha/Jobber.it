@@ -8,6 +8,8 @@ import {
   type ReactNode,
 } from 'react'
 
+import { STORAGE_KEYS } from '@/lib/storage-keys'
+
 export type CompensationPeriod = 'annual' | 'monthly'
 
 type CompensationContextValue = {
@@ -15,7 +17,7 @@ type CompensationContextValue = {
   setPeriod(period: CompensationPeriod): void
 }
 
-export const COMPENSATION_PERIOD_STORAGE_KEY = 'jobber.compensation-period.v1'
+export const COMPENSATION_PERIOD_STORAGE_KEY = STORAGE_KEYS.compensationPeriod
 
 const CompensationContext = createContext<CompensationContextValue | null>(null)
 
