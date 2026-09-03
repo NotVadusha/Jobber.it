@@ -1,12 +1,24 @@
 from __future__ import annotations
 
 from sqlalchemy import (
-    ARRAY, BigInteger, Boolean, Column, DateTime, Index, Integer, MetaData,
-    Table, Text, func, text,
+    ARRAY, BigInteger, Boolean, Column, Computed, DateTime, Index, Integer,
+    MetaData, Table, Text, func, text,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 
 metadata = MetaData()
+
+SEARCH_DOCUMENT_SQL = """
+to_tsvector(
+  'simple'::regconfig,
+  coalesce(title, '') || ' ' ||
+  coalesce(company, '') || ' ' ||
+  coalesce(public.jobber_stack_text(stack), '') || ' ' ||
+  coalesce(requirements_text, '') || ' ' ||
+  coalesce(responsibilities_text, '') || ' ' ||
+  coalesce(description_text, '')
+)
+""".strip()
 
 postings = Table(
     "postings", metadata,
@@ -30,6 +42,11 @@ postings = Table(
     Column("stack", ARRAY(Text)),
     Column("responsibilities_text", Text),
     Column("requirements_text", Text),
+    Column(
+        "search_document",
+        TSVECTOR,
+        Computed(SEARCH_DOCUMENT_SQL, persisted=True),
+    ),
 
     Column("normalized_at", DateTime(timezone=True)),
     Column("indexed_at", DateTime(timezone=True)),
@@ -44,6 +61,25 @@ Index("postings_pending_index", postings.c.source,
       postgresql_where=text("indexed_at IS NULL"))
 Index("postings_live", postings.c.source, postings.c.last_seen_at,
       postgresql_where=text("delisted_at IS NULL"))
+Index(
+    "postings_live_search",
+    postings.c.search_document,
+    postgresql_using="gin",
+    postgresql_where=text("delisted_at IS NULL"),
+)
+Index(
+    "postings_live_newest",
+    func.coalesce(postings.c.posted_at, postings.c.first_seen_at).desc(),
+    postings.c.id.asc(),
+    postgresql_where=text("delisted_at IS NULL"),
+)
+Index(
+    "postings_live_salary",
+    postings.c.salary_min.desc().nulls_last(),
+    func.coalesce(postings.c.posted_at, postings.c.first_seen_at).desc(),
+    postings.c.id.asc(),
+    postgresql_where=text("delisted_at IS NULL"),
+)
 
 scrape_runs = Table(
     "scrape_runs", metadata,

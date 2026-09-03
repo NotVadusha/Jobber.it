@@ -21,6 +21,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/postings/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Query Postings */
+        post: operations["query_postings_api_postings_query_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/search": {
         parameters: {
             query?: never;
@@ -114,6 +131,27 @@ export interface components {
              */
             query: string;
         };
+        /** CatalogueQueryRequest */
+        CatalogueQueryRequest: {
+            filters?: components["schemas"]["PostingFilters"];
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Query
+             * @default
+             */
+            query: string;
+            /** @default newest */
+            sort: components["schemas"]["CatalogueSort"];
+        };
+        /**
+         * CatalogueSort
+         * @enum {string}
+         */
+        CatalogueSort: "newest" | "salary";
         /** ErrorBody */
         ErrorBody: {
             code: components["schemas"]["ErrorCode"];
@@ -128,7 +166,7 @@ export interface components {
          * ErrorCode
          * @enum {string}
          */
-        ErrorCode: "EMPTY_SEARCH" | "INVALID_REQUEST" | "POSTING_NOT_FOUND" | "VALIDATION_ERROR" | "RATE_LIMITED" | "SEARCH_UNAVAILABLE" | "INTERNAL_ERROR";
+        ErrorCode: "EMPTY_SEARCH" | "INVALID_REQUEST" | "POSTING_NOT_FOUND" | "VALIDATION_ERROR" | "RATE_LIMITED" | "SEARCH_UNAVAILABLE" | "CATALOGUE_UNAVAILABLE" | "INTERNAL_ERROR";
         /** ErrorResponse */
         ErrorResponse: {
             error: components["schemas"]["ErrorBody"];
@@ -147,6 +185,8 @@ export interface components {
             corpus_size: number;
             /** Retrieval */
             retrieval: string;
+            /** Source Counts */
+            source_counts: components["schemas"]["SourceCountData"][];
             /** Sources */
             sources: components["schemas"]["SourceId"][];
         };
@@ -190,6 +230,37 @@ export interface components {
          * @enum {string}
          */
         PostingSeniority: "intern" | "junior" | "mid" | "senior" | "lead" | "principal" | "unknown";
+        /** PostingSummary */
+        PostingSummary: {
+            /** Company */
+            company: string;
+            /** First Seen At */
+            first_seen_at?: string | null;
+            /** Id */
+            id: string;
+            /** Location */
+            location?: string | null;
+            /** Posted At */
+            posted_at?: string | null;
+            remote_policy?: components["schemas"]["RemotePolicy"] | null;
+            /** Salary Max */
+            salary_max?: number | null;
+            /** Salary Min */
+            salary_min?: number | null;
+            seniority?: components["schemas"]["PostingSeniority"] | null;
+            source: components["schemas"]["SourceId"];
+            /** Stack */
+            stack?: string[];
+            /** Title */
+            title: string;
+            /**
+             * Url
+             * Format: uri
+             */
+            url: string;
+            /** Years Required */
+            years_required?: number | null;
+        };
         /** RankingEvidence */
         RankingEvidence: {
             /** Literal Hits */
@@ -220,6 +291,12 @@ export interface components {
          * @enum {string}
          */
         SeniorityFilter: "intern" | "junior" | "mid" | "senior" | "lead" | "principal";
+        /** SourceCountData */
+        SourceCountData: {
+            /** Count */
+            count: number;
+            source: components["schemas"]["SourceId"];
+        };
         /**
          * SourceId
          * @enum {string}
@@ -233,6 +310,12 @@ export interface components {
         /** SuccessResponse[MetaData] */
         SuccessResponse_MetaData_: {
             data: components["schemas"]["MetaData"];
+            meta: components["schemas"]["ResponseMeta"];
+        };
+        /** SuccessResponse[list[PostingSummary]] */
+        SuccessResponse_list_PostingSummary__: {
+            /** Data */
+            data: components["schemas"]["PostingSummary"][];
             meta: components["schemas"]["ResponseMeta"];
         };
         /** TraceNode */
@@ -275,6 +358,66 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    query_postings_api_postings_query_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CatalogueQueryRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuccessResponse_list_PostingSummary__"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -335,6 +478,15 @@ export interface operations {
             };
             /** @description Bad Gateway */
             502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

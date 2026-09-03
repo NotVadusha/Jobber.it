@@ -10,7 +10,7 @@
 
 **Last updated:** 2026-09-02
 
-**Implementation status:** Not started
+**Implementation status:** Code complete; live-database/E2E/computer-use evidence in Section 19.14 still pending
 
 ## 1. Objective
 

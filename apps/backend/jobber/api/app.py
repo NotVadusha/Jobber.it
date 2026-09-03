@@ -11,14 +11,18 @@ from fastapi.responses import JSONResponse
 
 from .. import catalog, ranking
 from ..logging import get_logger
+from ..postings import PostingSummary
 from .contracts import (
     BestMatchData,
     BestMatchRequest,
+    CatalogueQueryRequest,
     ErrorBody,
     ErrorCode,
     ErrorResponse,
     MetaData,
+    PaginationMeta,
     ResponseMeta,
+    SourceCountData,
     SuccessResponse,
 )
 
@@ -46,7 +50,10 @@ def _error_response(
     return JSONResponse(
         status_code=status_code,
         content=payload.model_dump(mode="json"),
-        headers={"X-Request-ID": _request_id(request)},
+        headers={
+            "X-Request-ID": _request_id(request),
+            "Cache-Control": "no-store",
+        },
     )
 
 
@@ -112,6 +119,25 @@ async def search_unavailable(
     )
 
 
+@app.exception_handler(catalog.CatalogueUnavailable)
+async def catalogue_unavailable(
+    request: Request,
+    _error: catalog.CatalogueUnavailable,
+) -> JSONResponse:
+    logger.warning(
+        "catalogue_unavailable",
+        "Postings catalogue is temporarily unavailable",
+        request_id=_request_id(request),
+        path=request.url.path,
+    )
+    return _error_response(
+        request,
+        status_code=503,
+        code=ErrorCode.CATALOGUE_UNAVAILABLE,
+        message="The postings catalogue is temporarily unavailable.",
+    )
+
+
 @app.exception_handler(Exception)
 async def internal_error(request: Request, error: Exception) -> JSONResponse:
     logger.error(
@@ -132,7 +158,10 @@ async def internal_error(request: Request, error: Exception) -> JSONResponse:
 @app.get(
     "/api/meta",
     response_model=SuccessResponse[MetaData],
-    responses={500: {"model": ErrorResponse}},
+    responses={
+        500: {"model": ErrorResponse},
+        503: {"model": ErrorResponse},
+    },
 )
 def meta(request: Request) -> SuccessResponse[MetaData]:
     stats = catalog.corpus_stats()
@@ -140,9 +169,50 @@ def meta(request: Request) -> SuccessResponse[MetaData]:
         data=MetaData(
             corpus_size=stats.count,
             sources=list(stats.sources),
+            source_counts=[
+                SourceCountData(source=item.source, count=item.count)
+                for item in stats.source_counts
+            ],
             retrieval="hybrid+rerank",
         ),
         meta=ResponseMeta(request_id=_request_id(request)),
+    )
+
+
+@app.post(
+    "/api/postings/query",
+    response_model=SuccessResponse[list[PostingSummary]],
+    responses={
+        422: {"model": ErrorResponse},
+        500: {"model": ErrorResponse},
+        503: {"model": ErrorResponse},
+    },
+)
+def query_postings(
+    request: Request,
+    response: Response,
+    payload: CatalogueQueryRequest,
+) -> SuccessResponse[list[PostingSummary]]:
+    started = time.perf_counter()
+    result = catalog.query_postings(
+        query=payload.query,
+        filters=payload.filters,
+        sort=payload.sort,
+        page=payload.page,
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return SuccessResponse(
+        data=list(result.postings),
+        meta=ResponseMeta(
+            request_id=_request_id(request),
+            pagination=PaginationMeta(
+                page=result.page,
+                page_size=result.page_size,
+                total_items=result.total_items,
+                total_pages=result.total_pages,
+            ),
+            took_ms=round((time.perf_counter() - started) * 1000, 1),
+        ),
     )
 
 
@@ -154,6 +224,7 @@ def meta(request: Request) -> SuccessResponse[MetaData]:
         422: {"model": ErrorResponse},
         500: {"model": ErrorResponse},
         502: {"model": ErrorResponse},
+        503: {"model": ErrorResponse},
     },
 )
 def search(request: Request, payload: BestMatchRequest) -> SuccessResponse[BestMatchData]:
