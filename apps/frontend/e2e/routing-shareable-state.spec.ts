@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test'
 
+import { completedStream, encodeStream } from './fixtures/best-match-stream'
+
 // Exercises production routing exclusively through direct URLs, visible
 // controls, native anchors, Back/Forward, and browser history — this spec
 // imports no routing module directly (see docs/plans/03-routing-and-shareable-state.md §18).
@@ -15,18 +17,6 @@ const metaWire = {
     retrieval: 'hybrid+rerank',
   },
   meta: { request_id: 'req-meta' },
-}
-
-const searchWire = {
-  data: {
-    query: 'postgres',
-    terms: ['postgres'],
-    results: [],
-    filters_applied: [],
-    corpus_size: 321,
-    trace: [],
-  },
-  meta: { request_id: 'req-search', took_ms: 12.5 },
 }
 
 // The catalogue is stubbed with a page count no URL under test can exceed, so
@@ -56,9 +46,12 @@ test.beforeEach(async ({ page }) => {
 
 const mockSearch = async (page: import('@playwright/test').Page) => {
   let requests = 0
-  await page.route('**/api/search', async (route) => {
+  await page.route('**/api/search/stream', async (route) => {
     requests += 1
-    await route.fulfill({ status: 200, contentType: 'application/json', json: searchWire })
+    await route.fulfill({
+      contentType: 'text/event-stream',
+      body: encodeStream(completedStream([])),
+    })
   })
   return () => requests
 }
@@ -324,10 +317,13 @@ test.describe('search integration', () => {
   test('direct-opening a shared query and filters URL hydrates and reruns automatically', async ({ page }) => {
     let body: unknown
     let requests = 0
-    await page.route('**/api/search', async (route) => {
+    await page.route('**/api/search/stream', async (route) => {
       requests += 1
       body = route.request().postDataJSON()
-      await route.fulfill({ status: 200, contentType: 'application/json', json: searchWire })
+      await route.fulfill({
+        contentType: 'text/event-stream',
+        body: encodeStream(completedStream([])),
+      })
     })
 
     await page.goto('/#/jobs?q=postgres&workplace=remote,hybrid&seniority=senior')
@@ -342,9 +338,12 @@ test.describe('search integration', () => {
 
   test('submitting sends query, filters and profile as separate wire fields', async ({ page }) => {
     let body: unknown
-    await page.route('**/api/search', async (route) => {
+    await page.route('**/api/search/stream', async (route) => {
       body = route.request().postDataJSON()
-      await route.fulfill({ status: 200, contentType: 'application/json', json: searchWire })
+      await route.fulfill({
+        contentType: 'text/event-stream',
+        body: encodeStream(completedStream([])),
+      })
     })
 
     await page.goto('/')
@@ -377,9 +376,12 @@ test.describe('search integration', () => {
 
   test('combined query and CV shares only the query in the URL', async ({ page }) => {
     let body: { profile_text?: string } | undefined
-    await page.route('**/api/search', async (route) => {
+    await page.route('**/api/search/stream', async (route) => {
       body = route.request().postDataJSON()
-      await route.fulfill({ status: 200, contentType: 'application/json', json: searchWire })
+      await route.fulfill({
+        contentType: 'text/event-stream',
+        body: encodeStream(completedStream([])),
+      })
     })
 
     await page.goto('/')
@@ -407,7 +409,7 @@ test.describe('entry-scoped result restoration', () => {
     await input.fill('postgres')
     await submit.click()
     await expect(page).toHaveURL(/q=postgres$/)
-    await expect(page.getByText('Nothing cleared the filters.')).toBeVisible()
+    await expect(page.getByText('Nothing cleared your filters')).toBeVisible()
     expect(requests()).toBe(1)
 
     await input.fill('kafka')
@@ -417,7 +419,7 @@ test.describe('entry-scoped result restoration', () => {
 
     await page.goBack()
     await expect(page).toHaveURL(/q=postgres$/)
-    await expect(page.getByText('Nothing cleared the filters.')).toBeVisible()
+    await expect(page.getByText('Nothing cleared your filters')).toBeVisible()
     expect(requests()).toBe(2)
 
     await page.reload()
