@@ -10,6 +10,8 @@ import {
   type ReactNode,
 } from 'react'
 
+import { CloseIcon } from '@/ui/icons/CloseIcon'
+
 export type ToastTone = 'info' | 'success'
 
 export type ToastInput = {
@@ -85,7 +87,7 @@ export function ToastProvider({ children }: { children: ReactNode }): ReactEleme
               aria-label="Dismiss notification"
               className="text-secondary transition-colors hover:text-primary"
             >
-              <CloseIcon />
+              <CloseIcon size={12} />
             </button>
           </div>
         )}
@@ -98,22 +100,4 @@ export function useToast(): ToastContextValue {
   const value = useContext(ToastContext)
   if (!value) throw new Error('useToast must be used inside ToastProvider')
   return value
-}
-
-function CloseIcon(): ReactElement {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 12 12"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.4"
-      strokeLinecap="round"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path d="M2 2l8 8M10 2l-8 8" />
-    </svg>
-  )
 }

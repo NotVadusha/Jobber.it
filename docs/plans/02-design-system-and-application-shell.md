@@ -164,7 +164,19 @@ apps/frontend/
 │   │   └── motion.css            # shared keyframes and reduced-motion policy
 │   ├── ui/
 │   │   ├── theme.tsx             # theme interface and toggle
-│   │   ├── AppShell.tsx          # shell interface; private header/footer/menu
+│   │   ├── shell/                # shell module; one file per component
+│   │   │   ├── AppShell.tsx      # public shell interface
+│   │   │   ├── SiteHeader.tsx    # header; consumes useMobileMenu
+│   │   │   ├── MobileMenu.tsx    # compact anchored mobile panel
+│   │   │   ├── SiteFooter.tsx    # real-links footer
+│   │   │   ├── LogoMark.tsx      # terminal/amber logotype anchor
+│   │   │   ├── useMobileMenu.ts  # menu state, close triggers, focus return
+│   │   │   └── types.ts          # shell public types
+│   │   ├── icons/                # one file per icon, no icon dependency
+│   │   │   ├── SunIcon.tsx
+│   │   │   ├── MoonIcon.tsx
+│   │   │   ├── MenuIcon.tsx
+│   │   │   └── CloseIcon.tsx     # shared by the menu button and toast dismiss
 │   │   ├── toast.tsx             # one-at-a-time toast interface
 │   │   ├── PageState.tsx         # loading/empty/error region
 │   │   └── Skeleton.tsx          # structural loading primitive
@@ -181,11 +193,11 @@ Import direction:
 - `main.tsx` imports `app`, `ui`, styles, and fonts.
 - `app` imports `features` and `ui`.
 - `features` may import `ui`, `api`, and `lib`.
-- `ui` may import React and same-folder `ui` modules only.
+- `ui` may import React and other `ui` modules only.
 - `ui` does not import `app`, `features`, `api`, or product-specific posting/search types.
 - Styles do not import feature-specific CSS.
 
-No `ui/index.ts` barrel is created. Callers import the owning module directly, for example `@/ui/theme` or `@/ui/AppShell`.
+No barrel file is created at any level. Callers import the owning module directly, for example `@/ui/theme`, `@/ui/shell/AppShell`, or `@/ui/icons/MenuIcon`.
 
 ## 7. Theme Contract
 
@@ -883,7 +895,7 @@ export function ThemeToggle(): ReactElement {
 }
 ```
 
-`SunIcon` and `MoonIcon` are private functions in the same file returning the 17 × 17 outline SVG paths from the approved mockup, with `aria-hidden="true"`, `focusable="false"`, and `currentColor`. Do not export them or add an icon module.
+`SunIcon` and `MoonIcon` return the 17 × 17 outline SVG paths from the approved mockup, with `aria-hidden="true"`, `focusable="false"`, and `currentColor`. **Revised during PR review (see Section 21.6):** they live in `src/ui/icons/`, one file per icon, and `theme.tsx` imports them. No icon *dependency* is added — these remain hand-written local SVG components.
 
 ### 18.5 Exact token CSS shape
 
@@ -1085,7 +1097,7 @@ Plan 2 preserves the module-level `queryClient` and `QueryClientProvider` introd
 
 ### 18.8 Exact `AppShell` implementation requirements
 
-The file exports only `AppShell` and its public types. `SiteHeader`, `MobileMenu`, `SiteFooter`, `LogoMark`, and menu icons remain private.
+`AppShell` and its public types are the shell's public surface; `SiteHeader`, `MobileMenu`, `SiteFooter`, `LogoMark`, and the menu icons are internal to the shell and are never imported outside `src/ui`. **Revised during PR review (see Section 21.6):** each lives in its own file under `src/ui/shell/` (icons under `src/ui/icons/`) rather than as private functions inside one `AppShell.tsx`, and the mobile-menu state/effects live in a `useMobileMenu` hook rather than inline in `SiteHeader`.
 
 Use this top-level shape:
 
@@ -1393,3 +1405,17 @@ A final whole-branch review of this completed plan (post-merge, on `release-1.0.
 8. `src/ui/toast.tsx`'s `normalizeToast` threw unconditionally on an empty/whitespace message; per Section 10.1's "rejected with a development error" contract this is now guarded behind `import.meta.env.DEV`. Production fallback: `normalizeToast` returns `null` and `showToast` silently no-ops (no toast shown, no throw) — chosen because it keeps the calling code simplest and an empty toast message is a caller bug, not something a production user needs surfaced. All current tests run against the Vite dev server (`import.meta.env.DEV` true), so the throw path is unchanged in tests.
 
 Verification after the fix wave: `npm --prefix apps/frontend run typecheck`, `lint`, `e2e` (27 passed, 0 failed — 26 pre-existing plus the one new Section 14 test), and `build` all passed. See the fix-wave report (`.superpowers/sdd/02-design-system-and-application-shell/fixwave-report.md`) for exact command output and file:line detail.
+
+### 21.6 PR review round — module decomposition (2026-09-03)
+
+Four review comments on [PR #2](https://github.com/NotVadusha/Jobber.it/pull/2) asked for a finer file decomposition of the `ui` layer than Sections 6, 18.4, and 18.8 originally specified. The plan owner approved the change on the PR, so those three sections were revised in place rather than left contradicting the shipped structure. Every change below is structural — no rendered markup, class name, accessibility attribute, or behavior changed.
+
+1. **`AppShell.tsx:119` — "Let's create a utils hook to handle this, and other menu logic. This hook will be called here and return all needed controls back to us."** Mobile-menu state and its close triggers moved out of `SiteHeader` into `src/ui/shell/useMobileMenu.ts`, which owns the `open` state, the Escape / outside-pointer / `hashchange` effect, and both refs, returning `{ open, toggle, close, headerRef, buttonRef }`. `SiteHeader` destructures that return; destructuring rather than holding the object matters, because member access on the hook's return (`menu.headerRef`) makes Oxlint's `react(refs)` rule fire ten false positives about reading refs during render.
+
+2. **`AppShell.tsx:298` — "Move each component into it's own separate file. Create a folder to group them."** `src/ui/AppShell.tsx` was replaced by `src/ui/shell/`, one component per file: `AppShell.tsx` (public), `SiteHeader.tsx`, `MobileMenu.tsx`, `SiteFooter.tsx`, `LogoMark.tsx`, plus `types.ts` for the shared public types and `useMobileMenu.ts` for the hook. No barrel file: `App.tsx` imports `@/ui/shell/AppShell`, and the e2e harness imports its types from `@/ui/shell/types`.
+
+3. **`theme.tsx:154` — "Separate file per icon"** and **`toast.tsx:119` — "Separate file for icon."** With the plan owner's follow-up instruction to give icons their own folder, all four icons moved to `src/ui/icons/`: `SunIcon.tsx`, `MoonIcon.tsx`, `MenuIcon.tsx`, `CloseIcon.tsx`. Section 18.4's "do not add an icon module" prohibition was aimed at adding an icon *dependency*; these remain hand-written local SVG components and no package was added, so Section 4.2's exclusion still holds.
+
+Two consolidations fell out of the split. `MenuIcon` previously branched internally on an `open` prop to render either a hamburger or an X; the branch now lives in `SiteHeader` (`open ? <CloseIcon /> : <MenuIcon />`), so neither icon knows about menu state. The X glyph existed twice — 18 px in the menu button, 12 px in the toast dismiss — and is now a single `CloseIcon` with a `size` prop; it scales `strokeWidth` against the viewBox so both call sites keep their original 1.4 px optical stroke.
+
+Verification after this round: `make verify-full` exit 0 — Oxlint clean with the same five pre-existing warnings and no new ones, `tsc --noEmit` clean, 146 Python tests passed, 27 Playwright tests passed, production build succeeded. The Playwright suite is the regression proof that the decomposition changed no behavior: every shell, menu, theme, and toast journey passed unmodified.
