@@ -9,6 +9,9 @@ import {
   type ReactNode,
 } from 'react'
 
+import { MoonIcon } from '@/ui/icons/MoonIcon'
+import { SunIcon } from '@/ui/icons/SunIcon'
+
 export type Theme = 'light' | 'dark'
 
 export const THEME_STORAGE_KEY = 'jobber.theme.v1'
@@ -112,43 +115,5 @@ export function ThemeToggle(): ReactElement {
     >
       {target === 'light' ? <SunIcon /> : <MoonIcon />}
     </button>
-  )
-}
-
-function SunIcon(): ReactElement {
-  return (
-    <svg
-      width="17"
-      height="17"
-      viewBox="0 0 17 17"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.3"
-      strokeLinecap="round"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <circle cx="8.5" cy="8.5" r="3.2" />
-      <path d="M8.5 1.2v1.8M8.5 14v1.8M1.2 8.5h1.8M14 8.5h1.8M3.4 3.4l1.3 1.3M12.3 12.3l1.3 1.3M3.4 13.6l1.3-1.3M12.3 4.7l1.3-1.3" />
-    </svg>
-  )
-}
-
-function MoonIcon(): ReactElement {
-  return (
-    <svg
-      width="17"
-      height="17"
-      viewBox="0 0 17 17"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.3"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path d="M14.2 10.1A6 6 0 0 1 6.9 2.8a6 6 0 1 0 7.3 7.3Z" />
-    </svg>
   )
 }

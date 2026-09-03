@@ -1,4 +1,4 @@
-import { AppShell } from '@/ui/AppShell'
+import { AppShell } from '@/ui/shell/AppShell'
 import { SearchPage } from '@/features/search/SearchPage'
 
 export default function App() {
