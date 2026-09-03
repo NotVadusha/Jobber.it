@@ -119,10 +119,13 @@ def _ollama_post(client, system: str, user: str, schema: type[BaseModel], model:
 def call(
     provider: str, system: str, user: str, schema: type[BaseModel],
     model: str | None = None, effort: str = EFFORT,
+    timeout: float | None = None,
 ) -> BaseModel:
     client = _client(provider)
     spec = PROVIDERS[provider]
     model = model or spec.model
+    if timeout is not None and provider != "ollama":
+        client = client.with_options(timeout=timeout)
     last = ""
 
     for _ in range(2):

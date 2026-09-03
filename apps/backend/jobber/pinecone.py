@@ -10,6 +10,7 @@ from pinecone import Pinecone, RateLimitError
 
 from . import config
 from .logging import get_logger
+from .postings import PostingSection
 
 logger = get_logger(service="backend", module=__name__)
 
@@ -21,7 +22,7 @@ DENSE_INDEX = "jobber-dense"
 SPARSE_INDEX = "jobber-sparse"
 NAMESPACE = "postings"
 
-SECTIONS = ("requirements", "responsibilities", "description")
+SECTIONS = tuple(section.value for section in PostingSection)
 
 META = (
     "posting_id", "source", "url", "title", "company", "posted_at",
@@ -29,6 +30,10 @@ META = (
     "salary_min", "salary_max", "stack",
 )
 FIELDS = [*META, "section", "chunk_text"]
+SEARCH_FIELDS = ["posting_id", "section", "chunk_text"]
+
+RETRIEVE_TIMEOUT_SECONDS = 15.0
+RERANK_TIMEOUT_SECONDS = 25.0
 
 BATCH = 96
 RRF_K = 60
@@ -153,8 +158,14 @@ def rrf(runs: list[list[dict]], top_k: int) -> list[dict]:
 
 
 def search(
-    dense_text: str, sparse_text: str, filters: dict | None = None, top_k: int = 20,
+    *,
+    dense_text: str,
+    sparse_text: str,
+    filters: dict | None = None,
+    top_k: int = 20,
+    fields: list[str] | None = None,
 ) -> list[dict]:
+    requested = fields or FIELDS
     queries = (
         (_index(DENSE_INDEX, DENSE_MODEL, False), dense_text),
         (_index(SPARSE_INDEX, SPARSE_MODEL, False), sparse_text or dense_text),
@@ -165,7 +176,8 @@ def search(
                 hit.fields | {"id": hit.id}
                 for hit in q[0].search(
                     namespace=NAMESPACE, top_k=top_k, inputs={"text": q[1]},
-                    filter=filters, fields=FIELDS,
+                    filter=filters, fields=requested,
+                    timeout=RETRIEVE_TIMEOUT_SECONDS,
                 ).result.hits
             ],
             queries,
@@ -173,24 +185,28 @@ def search(
     return rrf(runs, top_k)
 
 
-def dedupe_by_posting(hits: list[dict]) -> list[dict]:
-    best: dict[str, dict] = {}
-    for hit in hits:
-        best.setdefault(hit.get("posting_id", hit["id"]), hit)
-    return list(best.values())
-
-
-def rerank(query: str, hits: list[dict], top_n: int = 5) -> list[dict]:
-    if not hits:
-        return hits
-    result = client().inference.rerank(
-        model=RERANK_MODEL,
-        query=query,
-        documents=[{"id": h["id"], "text": h["chunk_text"]} for h in hits],
-        rank_fields=["text"],
-        return_documents=False,
-        parameters={"truncate": "END"},
+@lru_cache(maxsize=1)
+def _rerank_client() -> Pinecone:
+    return Pinecone(
+        api_key=config.get().pinecone_api_key,
+        timeout=RERANK_TIMEOUT_SECONDS,
     )
 
-    ranked = [hits[d.index] | {"score": d.score} for d in result.data]
-    return dedupe_by_posting(ranked)[:top_n]
+
+def rerank(query: str, documents: list[dict], top_n: int) -> list[dict]:
+    if not documents:
+        return []
+
+    result = _rerank_client().inference.rerank(
+        model=RERANK_MODEL,
+        query=query,
+        documents=documents,
+        rank_fields=["text"],
+        return_documents=False,
+        top_n=top_n,
+        parameters={"truncate": "END"},
+    )
+    return [
+        {"id": documents[item.index]["id"], "score": item.score}
+        for item in result.data
+    ]
