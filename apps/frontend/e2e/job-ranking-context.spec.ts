@@ -111,13 +111,15 @@ test('the panel renders the delivered literal terms and no others', async ({ pag
   expect(new Set(terms)).toEqual(new Set(FIXTURE_TERMS))
 })
 
-test('the uncalibrated-score sentence is present and links nowhere', async ({ page }) => {
+test('the uncalibrated-score sentence is present and links to Ranking', async ({ page }) => {
   await installWire(page, completedStream([posting(1, 0.87)]))
   await openRankedJob(page)
 
   await expect(panel(page)).toContainText('not from a new ranking')
   await expect(panel(page)).toContainText('not a probability, a prediction, or a guarantee')
-  await expect(panel(page).getByRole('link')).toHaveCount(0)
+  const links = panel(page).getByRole('link')
+  await expect(links).toHaveCount(1)
+  await expect(links).toHaveAttribute('href', '#/ranking')
 })
 
 test('reloading the job page removes the panel while the rest of the page still renders', async ({ page }) => {

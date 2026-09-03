@@ -201,9 +201,9 @@ test.describe('route matrix', () => {
   })
 
   for (const name of ['ranking', 'privacy', 'changelog', 'about']) {
-    test(`the recognized-but-inactive static route "${name}" falls back to jobs`, async ({ page }) => {
+    test(`the active static route "${name}" stays on its own URL`, async ({ page }) => {
       await page.goto(`/#/${name}`)
-      await expect(page).toHaveURL(/#\/jobs$/)
+      await expect(page).toHaveURL(new RegExp(`#/${name}$`))
     })
   }
 
@@ -260,7 +260,7 @@ test.describe('history', () => {
 
   test('inactive-route canonicalization does not add a back entry', async ({ page }) => {
     const requests = await mockSearch(page)
-    await page.goto('/#/about')
+    await page.goto('/#/does-not-exist')
     await expect(page).toHaveURL(/#\/jobs$/)
 
     await page.getByRole('textbox', { name: 'Search postings' }).fill('postgres')
@@ -269,10 +269,10 @@ test.describe('history', () => {
     expect(requests()).toBe(1)
 
     await page.goBack()
-    // The #/about -> #/jobs canonicalization replaced rather than pushed, so
-    // one Back reaches the plain jobs route, not the rejected #/about hash.
+    // The unknown-route -> #/jobs canonicalization replaced rather than pushed,
+    // so one Back reaches the plain jobs route, not the rejected hash.
     await expect(page).toHaveURL(/#\/jobs$/)
-    expect(page.url()).not.toContain('about')
+    expect(page.url()).not.toContain('does-not-exist')
   })
 
   test('resubmitting the same query renews the execution id without a new entry', async ({ page }) => {

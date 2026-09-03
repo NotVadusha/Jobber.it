@@ -79,6 +79,43 @@
     },
     {
       "files": [
+        "src/features/explain/changelog-data.ts"
+      ],
+      "rules": {
+        "no-restricted-globals": [
+          "error",
+          {
+            "name": "EventSource",
+            "message": "The Best-match stream is a POST with a body; EventSource cannot send one."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/features/explain/**"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/app/**",
+                  "@/features/catalogue/**",
+                  "@/features/search/**",
+                  "@/features/job-detail/**"
+                ],
+                "message": "Explanatory pages read constants, not product screens."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
         "e2e/**"
       ],
       "rules": {

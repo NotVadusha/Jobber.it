@@ -1,6 +1,8 @@
 import { useMemo, useSyncExternalStore } from 'react'
 
-export const SAVED_JOBS_STORAGE_KEY = 'jobber.saved-jobs.v1'
+import { STORAGE_KEYS } from '@/lib/storage-keys'
+
+export const SAVED_JOBS_STORAGE_KEY = STORAGE_KEYS.savedJobs
 export const SAVED_JOBS_LIMIT = 100
 
 export type SavedJob = {

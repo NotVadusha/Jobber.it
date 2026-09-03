@@ -97,7 +97,7 @@ test('Stop leaves a stopped state, its description, and a working rerun action',
   await expect(cards(page)).toHaveCount(1)
 })
 
-test('% match is the rounded integer of score * 100, with the uncalibrated notice and no link', async ({ page }) => {
+test('% match is the rounded integer of score * 100, with the uncalibrated notice linking to Ranking', async ({ page }) => {
   const result = posting(1, 0.826)
   await installStream(page, (route) => fulfilStream(route, completedStream([result])))
 
@@ -107,7 +107,9 @@ test('% match is the rounded integer of score * 100, with the uncalibrated notic
 
   const notice = page.getByText(/uncalibrated/i)
   await expect(notice).toBeVisible()
-  await expect(notice.locator('a')).toHaveCount(0)
+  const link = notice.locator('a')
+  await expect(link).toHaveCount(1)
+  await expect(link).toHaveAttribute('href', '#/ranking')
 })
 
 test('Why this ranked lists only delivered evidence and is absent when evidence is empty', async ({ page }) => {
