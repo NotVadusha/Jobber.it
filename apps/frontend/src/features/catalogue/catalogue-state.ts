@@ -1,6 +1,7 @@
 import type { PostgresSearchRequest } from '@/api/search'
 import { defaultJobsState, type JobsUrlFilters, type JobsUrlState } from '@/routing/jobs-model'
 import { normalizeJobsState, toApiFilters } from '@/routing/jobs-state'
+import { encodeJobsState } from '@/routing/jobs-url'
 
 export const CATALOGUE_DEBOUNCE_MS = 350
 
@@ -48,14 +49,18 @@ export const buildCatalogueDraftState = ({
   applied: JobsUrlState
   query: string
   filters: JobsUrlFilters
-}): JobsUrlState => {
-  return normalizeJobsState({
+}): JobsUrlState {
+  const draft = normalizeJobsState({
     ...applied,
     view: 'all',
     query,
     filters,
     page: 1,
   })
+  const appliedFirstPage = normalizeJobsState({ ...applied, view: 'all', page: 1 })
+  return encodeJobsState(draft) === encodeJobsState(appliedFirstPage)
+    ? { ...draft, page: applied.page }
+    : draft
 }
 
 export const shouldShowWelcome = ({
