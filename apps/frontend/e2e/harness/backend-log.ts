@@ -10,7 +10,7 @@ export const BACKEND_LOG_PATH = fileURLToPath(
   new URL('../.backend-log.ndjson', import.meta.url),
 )
 
-function tee(stream: NodeJS.WriteStream): void {
+const tee = (stream: NodeJS.WriteStream): void => {
   const original = stream.write.bind(stream)
   stream.write = ((chunk: string | Uint8Array, ...rest: unknown[]) => {
     appendFileSync(BACKEND_LOG_PATH, chunk)
@@ -19,7 +19,7 @@ function tee(stream: NodeJS.WriteStream): void {
   }) as typeof stream.write
 }
 
-export default function globalSetup(): void {
+export default const globalSetup = (): void => {
   writeFileSync(BACKEND_LOG_PATH, '')
   tee(process.stdout)
   tee(process.stderr)

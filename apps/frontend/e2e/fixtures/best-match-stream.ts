@@ -19,7 +19,7 @@ const STAGES: ReadonlyArray<[Schemas['RankingStage'], number, string, number]> =
   ['rerank', 5, 'bge-reranker-v2-m3', 0],
 ]
 
-export function posting(index: number, score: number): Schemas['BestMatchPosting'] {
+export const posting = (index: number, score: number): Schemas['BestMatchPosting'] => {
   return {
     id: `greenhouse:${index}`,
     source: 'greenhouse',
@@ -43,7 +43,7 @@ export function posting(index: number, score: number): Schemas['BestMatchPosting
   }
 }
 
-export function completedStream(results: Schemas['BestMatchPosting'][]): WireStreamEvent[] {
+export const completedStream = (results: Schemas['BestMatchPosting'][]): WireStreamEvent[] => {
   return [
     { event: 'search.started', request_id: REQUEST_ID },
     ...STAGES.flatMap(([stage, ordinal, detail, count]): WireStreamEvent[] => [
@@ -81,10 +81,10 @@ export function completedStream(results: Schemas['BestMatchPosting'][]): WireStr
   ]
 }
 
-export function encodeStream(
+export const encodeStream = (
   events: readonly WireStreamEvent[],
   extra = '',
-): string {
+): string => {
   const frames = events.map(
     (event) => `event: ${event.event}\ndata: ${JSON.stringify(event)}\n\n`,
   )

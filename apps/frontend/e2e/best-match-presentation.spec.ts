@@ -31,14 +31,14 @@ const metaWire = {
   meta: { request_id: 'req-meta' },
 }
 
-function cards(page: Page) {
+const cards = (page: Page) => {
   return page.locator('li[aria-labelledby^="best-match-"]')
 }
 
-async function installStream(
+const installStream = async (
   page: Page,
   handler: (route: Route, callIndex: number) => Promise<void>,
-): Promise<void> {
+): Promise<void> => {
   let callIndex = 0
   await page.route('**/api/search/stream', async (route) => {
     callIndex += 1
@@ -46,7 +46,7 @@ async function installStream(
   })
 }
 
-async function fulfilStream(route: Route, events: readonly WireStreamEvent[], extra = ''): Promise<void> {
+const fulfilStream = async (route: Route, events: readonly WireStreamEvent[], extra = ''): Promise<void> => {
   await route.fulfill({ contentType: 'text/event-stream', body: encodeStream(events, extra) })
 }
 
