@@ -16,7 +16,6 @@ if (!databaseName?.endsWith('_e2e')) {
 
 export default defineConfig({
   testDir: './e2e',
-  globalSetup: './e2e/harness/backend-log.ts',
   fullyParallel: false,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
