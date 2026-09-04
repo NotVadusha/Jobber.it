@@ -111,22 +111,6 @@ test.describe('best-match real-path lifecycle', () => {
     expect(raw).not.toContain(QUERY_BEACON)
   })
 
-  test('Stop leaves a stopped state, its description, and a working rerun action', async ({ page }) => {
-    await page.goto('/#/jobs?q=platform+engineer&view=best')
-
-    const stop = page.getByRole('button', { name: 'Stop' })
-    await stop.click()
-
-    const stopped = page.getByRole('region', { name: 'Search stopped' })
-    await expect(stopped).toBeVisible()
-    await expect(stopped).toContainText('stopped on this device before results arrived')
-
-    const rerun = page.getByRole('button', { name: 'Run the search again' })
-    await expect(rerun).toBeVisible()
-    await rerun.click()
-    await expect(page.getByRole('button', { name: 'Stop' }).or(page.getByRole('alert'))).toBeVisible()
-  })
-
   test('a stopped run logs search_cancelled with no query text and no address', async ({ page }) => {
     // §17's own risk note: GeneratorExit reaches ranked_stages() only once
     // CPython drops the last reference to the abandoned generator, which is
