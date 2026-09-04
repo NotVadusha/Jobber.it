@@ -72,6 +72,29 @@ test('a completed snapshot renders ten cards; Show more names and reveals the re
   await expect(cards(page)).toHaveCount(24)
 })
 
+test('Stop leaves a stopped state, its description, and a working rerun action', async ({ page }) => {
+  // The first stream is never fulfilled, so the search stays in flight for as
+  // long as the click needs; on the real path the pipeline can reach its
+  // terminal frame first and leave no Stop button to press.
+  await installStream(page, async (route, callIndex) => {
+    if (callIndex === 1) return
+    await fulfilStream(route, completedStream([posting(1, 0.9)]))
+  })
+
+  await page.goto('/#/jobs?q=python+platform&view=best')
+
+  await page.getByRole('button', { name: 'Stop' }).click()
+
+  const stopped = page.getByRole('region', { name: 'Search stopped' })
+  await expect(stopped).toBeVisible()
+  await expect(stopped).toContainText('stopped on this device before results arrived')
+
+  const rerun = page.getByRole('button', { name: 'Run the search again' })
+  await expect(rerun).toBeVisible()
+  await rerun.click()
+  await expect(cards(page)).toHaveCount(1)
+})
+
 test('% match is the rounded integer of score * 100, with the uncalibrated notice and no link', async ({ page }) => {
   const result = posting(1, 0.826)
   await installStream(page, (route) => fulfilStream(route, completedStream([result])))
