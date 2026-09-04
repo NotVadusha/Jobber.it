@@ -20,15 +20,15 @@ const metaWire = {
   meta: { request_id: 'req-meta' },
 }
 
-function cards(page: Page) {
+const cards = (page: Page) => {
   return page.locator('li[aria-labelledby^="best-match-"]')
 }
 
-async function mockStream(page: Page, handler: (route: Route) => Promise<void>): Promise<void> {
+const mockStream = async (page: Page, handler: (route: Route) => Promise<void>): Promise<void> => {
   await page.route('**/api/search/stream', handler)
 }
 
-async function triggerBestMatch(page: Page): Promise<void> {
+const triggerBestMatch = async (page: Page): Promise<void> => {
   await page.getByRole('button', { name: 'Best matches' }).click()
 }
 

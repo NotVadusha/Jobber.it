@@ -82,21 +82,24 @@ export const BestMatchTrace = ({
                 {stage.stage}
               </span>
               <span className="sr-only">{presentation.state}</span>
-              {stage.itemCount !== null && (
-                <span className="mt-1 font-mono text-[11px] tabular-nums text-accent">
-                  {stage.itemCount}
-                </span>
-              )}
-              {stage.durationMs !== null && (
-                <span className="mt-0.5 font-mono text-[10px] tabular-nums text-tertiary">
-                  {stage.durationMs} ms
-                </span>
-              )}
-              {stage.detail && (
-                <span className="mt-1 hidden max-w-[18ch] font-mono text-[10px] leading-relaxed text-tertiary sm:block">
-                  {stage.detail}
-                </span>
-              )}
+              <span
+                aria-hidden={stage.itemCount === null}
+                className="mt-1 font-mono text-[11px] tabular-nums text-accent"
+              >
+                {stage.itemCount ?? '\u00a0'}
+              </span>
+              <span
+                aria-hidden={stage.durationMs === null}
+                className="mt-0.5 font-mono text-[10px] tabular-nums text-tertiary"
+              >
+                {stage.durationMs === null ? '\u00a0' : `${stage.durationMs} ms`}
+              </span>
+              <span
+                aria-hidden={!stage.detail}
+                className="mt-1 hidden max-w-[18ch] font-mono text-[10px] leading-relaxed text-tertiary sm:block sm:min-h-[2.5rem]"
+              >
+                {stage.detail ?? '\u00a0'}
+              </span>
             </li>
           )
         })}

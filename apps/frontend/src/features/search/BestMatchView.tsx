@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactElement } from 'react'
 import { ApiError } from '@/api/client'
 import type { BestMatchRequest } from '@/api/search'
 import {
+  idleStream,
   useBestMatchStreamQuery,
   useCancelBestMatchStream,
   type BestMatchSelection,
@@ -56,6 +57,9 @@ export const BestMatchView = ({
   const streaming = query.isFetching
   const pending = isRankingPending(pendingRequest, selection?.request ?? null)
   const cooldown = error?.code === 'RATE_LIMITED' ? retryAfterSeconds(error) : null
+  // Rendered from the first paint, all stages pending, so the rail cannot
+  // appear underneath the Stop button and shift it out from under a click.
+  const traced = state ?? (streaming ? idleStream() : null)
 
   if (!selection) {
     return (
@@ -71,13 +75,13 @@ export const BestMatchView = ({
 
   return (
     <div className="mt-10">
-      {state && (
+      {traced && (
         <BestMatchTrace
-          stages={state.stages}
-          status={state.status}
+          stages={traced.stages}
+          status={traced.status}
           failed={Boolean(error)}
-          snapshot={state.snapshot}
-          tookMs={state.tookMs}
+          snapshot={traced.snapshot}
+          tookMs={traced.tookMs}
         />
       )}
 

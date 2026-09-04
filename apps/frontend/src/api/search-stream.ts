@@ -80,7 +80,7 @@ const pendingStages = (): BestMatchStageState[] => {
   }))
 }
 
-const idleStream = (): BestMatchStream => {
+export const idleStream = (): BestMatchStream => {
   return {
     status: 'streaming',
     requestId: null,

@@ -20,7 +20,7 @@ import { BACKEND_LOG_PATH } from './harness/backend-log'
 const QUERY_BEACON = 'zzstreamleakbeacon'
 const LIMITED_BASE = 'http://127.0.0.1:5175'
 
-function readBackendLog(): string {
+const readBackendLog = (): string => {
   try {
     return readFileSync(BACKEND_LOG_PATH, 'utf8')
   } catch {
@@ -28,10 +28,10 @@ function readBackendLog(): string {
   }
 }
 
-async function waitForBackendLogLine(
+const waitForBackendLogLine = async (
   matcher: (line: string) => boolean,
   { timeoutMs = 8000, sinceLength = 0 }: { timeoutMs?: number; sinceLength?: number } = {},
-): Promise<string> {
+): Promise<string> => {
   const deadline = Date.now() + timeoutMs
   for (;;) {
     const content = readBackendLog()
@@ -45,11 +45,11 @@ async function waitForBackendLogLine(
   }
 }
 
-function trace(page: Page) {
+const trace = (page: Page) => {
   return page.getByLabel('Retrieval trace')
 }
 
-function stageRow(page: Page, stage: string) {
+const stageRow = (page: Page, stage: string) => {
   return trace(page).locator('li', { hasText: stage })
 }
 
