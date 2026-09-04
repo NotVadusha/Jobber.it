@@ -20,12 +20,18 @@ def frames(
     stages: Generator[ranking.StageEvent, None, ranking.RankingSnapshot],
     request_id: str,
 ) -> Generator[ServerSentEvent, None, ranking.RankingSnapshot]:
-    while True:
-        try:
-            event = next(stages)
-        except StopIteration as complete:
-            return complete.value
-        yield frame(_stage_event(request_id, event))
+    try:
+        while True:
+            try:
+                event = next(stages)
+            except StopIteration as complete:
+                return complete.value
+            yield frame(_stage_event(request_id, event))
+    finally:
+        # Closing the stage generator here bounds cancellation: without it the
+        # abandoned generator only sees GeneratorExit once CPython drops its
+        # last reference, which can fall to the cyclic collector.
+        stages.close()
 
 
 def _stage_event(request_id: str, event: ranking.StageEvent) -> SearchStreamEventModel:
