@@ -1,11 +1,6 @@
 import type { PostgresSearchRequest } from '@/api/search'
-import {
-  defaultJobsState,
-  normalizeJobsState,
-  toApiFilters,
-  type JobsUrlFilters,
-  type JobsUrlState,
-} from '@/routing/jobs-url'
+import { defaultJobsState, type JobsUrlFilters, type JobsUrlState } from '@/routing/jobs-model'
+import { normalizeJobsState, toApiFilters } from '@/routing/jobs-state'
 
 export const CATALOGUE_DEBOUNCE_MS = 350
 

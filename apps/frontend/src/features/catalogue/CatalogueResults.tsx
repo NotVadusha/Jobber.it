@@ -6,7 +6,7 @@ import { CataloguePagination } from '@/features/catalogue/CataloguePagination'
 import { CataloguePostingCard } from '@/features/catalogue/CataloguePostingCard'
 import { literalQueryTerms } from '@/features/catalogue/HighlightedText'
 import { CompensationPeriodToggle } from '@/features/jobs/compensation'
-import type { BrowseSort } from '@/routing/jobs-url'
+import type { BrowseSort } from '@/routing/jobs-model'
 import { PageState } from '@/ui/PageState'
 import { Skeleton } from '@/ui/Skeleton'
 

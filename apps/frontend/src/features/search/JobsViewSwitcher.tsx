@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
 
-import type { JobsView } from '@/routing/jobs-url'
+import type { JobsView } from '@/routing/jobs-model'
 
 export function JobsViewSwitcher({
   view,
