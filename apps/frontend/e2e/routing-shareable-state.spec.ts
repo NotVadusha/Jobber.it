@@ -104,6 +104,63 @@ test.describe('canonical jobs URL', () => {
         '&posted=7d&source=djinni,linkedin',
     )
   })
+
+  const numericCases = [
+    {
+      name: 'zero experience and the minimum salary remain valid',
+      query: 'experience=0&minSalary=1&page=1',
+      expected: '#/jobs?experience=0&minSalary=1',
+    },
+    {
+      name: 'inclusive upper numeric bounds remain valid',
+      query: 'experience=60&minSalary=1000000&page=9007199254740991',
+      expected: '#/jobs?experience=60&minSalary=1000000&page=9007199254740991',
+    },
+    {
+      name: 'values above numeric bounds are dropped',
+      query: 'experience=61&minSalary=1000001&page=9007199254740992',
+      expected: '#/jobs',
+    },
+    {
+      name: 'values below numeric bounds are dropped',
+      query: 'experience=-1&minSalary=0&page=0',
+      expected: '#/jobs',
+    },
+    {
+      name: 'decimal and exponent syntax are rejected in integer parameters',
+      query: 'experience=1.5&minSalary=1e3&page=2.0',
+      expected: '#/jobs',
+    },
+  ]
+
+  for (const { name, query, expected } of numericCases) {
+    test(name, async ({ page }) => {
+      await page.goto(`/#/jobs?${query}`)
+      await expect(page).toHaveURL(`http://127.0.0.1:5173/${expected}`)
+    })
+  }
+
+  test('invalid repeated scalar values are skipped and the first valid value wins', async ({ page }) => {
+    await page.goto(
+      '/#/jobs?view=invalid&view=all&view=best&experience=bad&experience=0&experience=5' +
+        '&minSalary=0&minSalary=100&minSalary=200&posted=invalid&posted=7d&posted=30d' +
+        '&page=0&page=2&page=3',
+    )
+    await expect(page).toHaveURL(
+      'http://127.0.0.1:5173/#/jobs?experience=0&minSalary=100&posted=7d&page=2',
+    )
+  })
+
+  test('Unicode and reserved query characters survive canonicalization and submission', async ({ page }) => {
+    await mockSearch(page)
+    await page.goto('/#/jobs?q=%20C%2B%2B+%C4%8Desk%C3%BD+%3F+%26+%2F%20')
+    const expectedUrl = 'http://127.0.0.1:5173/#/jobs?q=C%2B%2B%20%C4%8Desk%C3%BD%20%3F%20%26%20%2F'
+
+    await expect(page.getByRole('textbox', { name: 'Query' })).toHaveValue('C++ český ? & /')
+    await expect(page).toHaveURL(expectedUrl)
+    await page.getByRole('button', { name: 'Search' }).click()
+    await expect(page).toHaveURL(expectedUrl)
+  })
 })
 
 test.describe('route matrix', () => {
@@ -136,6 +193,42 @@ test.describe('route matrix', () => {
 })
 
 test.describe('history', () => {
+  test('canonical replacements and search pushes preserve unrelated history state', async ({ page }) => {
+    await mockSearch(page)
+    await page.goto('/')
+    await expect(page).toHaveURL(/#\/jobs$/)
+    const originalEntryId = await page.evaluate(() => {
+      const state = window.history.state
+      window.history.replaceState(
+        { ...state, anotherApp: { expanded: true } },
+        '',
+        '#/jobs?bogus=1',
+      )
+      window.dispatchEvent(new PopStateEvent('popstate'))
+      return state.jobber.entryId
+    })
+
+    await expect(page).toHaveURL(/#\/jobs$/)
+    expect(await page.evaluate(() => window.history.state)).toMatchObject({
+      anotherApp: { expanded: true },
+      jobber: { entryId: originalEntryId },
+    })
+
+    await page.getByRole('textbox', { name: 'Query' }).fill('postgres')
+    await page.getByRole('button', { name: 'Search' }).click()
+    await expect(page).toHaveURL(/q=postgres$/)
+    const pushedState = await page.evaluate(() => window.history.state)
+    expect(pushedState.anotherApp).toEqual({ expanded: true })
+    expect(pushedState.jobber.entryId).not.toBe(originalEntryId)
+
+    await page.goBack()
+    await expect(page).toHaveURL(/#\/jobs$/)
+    expect(await page.evaluate(() => window.history.state)).toMatchObject({
+      anotherApp: { expanded: true },
+      jobber: { entryId: originalEntryId },
+    })
+  })
+
   test('a direct in-page hash edit is picked up and canonicalized once', async ({ page }) => {
     await page.goto('/')
     await page.evaluate(() => {

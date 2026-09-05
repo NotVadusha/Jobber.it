@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
 
-import type { Route, RouteName } from '@/routing/hash-router'
+import type { Route, RouteName } from '@/routing/route-codec'
 import { SearchPage } from '@/features/search/SearchPage'
 
 export const ACTIVE_ROUTE_NAMES: ReadonlySet<RouteName> = new Set(['jobs'])

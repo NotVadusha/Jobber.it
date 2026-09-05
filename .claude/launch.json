@@ -12,6 +12,15 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "apps/frontend", "run", "dev"],
       "port": 5173
+    },
+    {
+      "name": "api-demo",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/jobber_e2e PINECONE_API_KEY=demo-not-used OPENAI_API_KEY=demo-not-used HOST=127.0.0.1 PORT=3000 uv run --project apps/backend jobber"
+      ],
+      "port": 3000
     }
   ]
 }
