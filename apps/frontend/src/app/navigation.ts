@@ -5,7 +5,7 @@ import type { FooterGroup, ShellNavItem } from '@/ui/shell/types'
 export const buildShellNavigation = (
   current: Route,
   active: ReadonlySet<RouteName>,
-): readonly ShellNavItem[] {
+): readonly ShellNavItem[] => {
   const items: ShellNavItem[] = []
 
   if (active.has('ranking')) {
@@ -29,7 +29,7 @@ export const buildShellNavigation = (
 
 export const buildFooterGroups = (
   active: ReadonlySet<RouteName>,
-): readonly FooterGroup[] {
+): readonly FooterGroup[] => {
   const groups: FooterGroup[] = []
 
   if (active.has('saved')) {
