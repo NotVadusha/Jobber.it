@@ -20,16 +20,20 @@ dependencies = [
 [project.scripts]
 jobber = "jobber.__main__:main"
 
-# SQLAlchemy and Alembic are dev-only on purpose: the models exist to generate
-# migrations, not to serve queries. Every runtime path is raw psycopg (jobber/db),
-# so no shipped image carries an ORM. Migrations run from a workstation against
-# the target DATABASE_URL — see the README's Database section.
+# SQLAlchemy and Alembic never serve a query: the models exist to generate
+# migrations, and every runtime path is raw psycopg (jobber/db). They live in
+# their own group because the API image installs it — `alembic upgrade head`
+# is that service's Railway pre-deploy step, so the schema moves with the code
+# that needs it instead of waiting on someone's workstation.
 [dependency-groups]
-dev = [
-    "pytest>=8",
+migrate = [
     "sqlalchemy>=2.0",
     "alembic>=1.13",
+]
+dev = [
+    "pytest>=8",
     "import-linter>=2.14",
+    {include-group = "migrate"},
 ]
 
 [build-system]

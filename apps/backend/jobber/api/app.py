@@ -235,6 +235,7 @@ async def catalogue_unavailable(
         "Postings catalogue is temporarily unavailable",
         request_id=_request_id(request),
         path=_log_path(request),
+        cause=repr(error.__cause__),
     )
     status_code, code, message = _failure(error)
     return _error_response(request, status_code=status_code, code=code, message=message)

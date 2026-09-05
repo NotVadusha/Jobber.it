@@ -18,6 +18,9 @@ export default defineRailway((ctx) => {
   const API = service("API", {
     source: JobberIt,
     build: { buildEnvironment: "V3", builder: "DOCKERFILE", dockerfilePath: "apps/backend/Dockerfile", watchPatterns: ["/apps/backend/**"] },
+    // Schema first, then the code that needs it: a failed migration fails the
+    // deploy and the previous version keeps serving.
+    preDeploy: "alembic upgrade head",
     replicas: { "europe-west4-drams3a": 1 },
     networking: { privateNetworkEndpoint: "api" },
     env: { DATABASE_URL: Postgres.env.DATABASE_URL, OPENAI_API_KEY: ctx.shared.OPENAI_API_KEY, PINECONE_API_KEY: ctx.shared.PINECONE_API_KEY, PORT: preserve() },

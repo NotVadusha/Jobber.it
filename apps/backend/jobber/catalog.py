@@ -190,8 +190,8 @@ def posting_detail(posting_id: str) -> PostingDetail:
                 f"select {_DETAIL_COLUMNS_SQL} from postings where id = %s",
                 (posting_id,),
             ).fetchone()
-    except (psycopg.Error, PoolTimeout):
-        raise CatalogueUnavailable from None
+    except (psycopg.Error, PoolTimeout) as error:
+        raise CatalogueUnavailable from error
 
     if row is None:
         raise PostingNotFound
@@ -206,8 +206,8 @@ def posting_lookup(ids: Sequence[str]) -> tuple[ResolvedPosting, ...]:
                 " where id = any(%s::text[]) order by id",
                 (list(ids),),
             ).fetchall()
-    except (psycopg.Error, PoolTimeout):
-        raise CatalogueUnavailable from None
+    except (psycopg.Error, PoolTimeout) as error:
+        raise CatalogueUnavailable from error
 
     return tuple(_resolved_posting(row) for row in rows)
 
@@ -221,8 +221,8 @@ def _load_corpus_stats(_time_bucket: int) -> CorpusStats:
                 " where delisted_at is null"
                 " group by source"
             ).fetchall()
-    except (psycopg.Error, PoolTimeout):
-        raise CatalogueUnavailable from None
+    except (psycopg.Error, PoolTimeout) as error:
+        raise CatalogueUnavailable from error
 
     counts_by_source = {
         SourceId(row["source"]): int(row["n"])
@@ -264,8 +264,8 @@ def live_candidates(
                 candidates_sql,
                 [*where_parameters, list(posting_ids)],
             ).fetchall()
-    except (psycopg.Error, PoolTimeout):
-        raise CatalogueUnavailable from None
+    except (psycopg.Error, PoolTimeout) as error:
+        raise CatalogueUnavailable from error
 
     return {str(row["id"]): _posting_summary(row) for row in rows}
 
@@ -304,8 +304,8 @@ def query_postings(
                     where_parameters,
                 ).fetchone()
                 total_items = int(count_row["total_items"])
-    except (psycopg.Error, PoolTimeout):
-        raise CatalogueUnavailable from None
+    except (psycopg.Error, PoolTimeout) as error:
+        raise CatalogueUnavailable from error
 
     total_pages = (
         (total_items + PAGE_SIZE - 1) // PAGE_SIZE

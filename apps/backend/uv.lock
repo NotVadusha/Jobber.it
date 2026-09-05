@@ -597,6 +597,10 @@ dev = [
     { name = "pytest" },
     { name = "sqlalchemy" },
 ]
+migrate = [
+    { name = "alembic" },
+    { name = "sqlalchemy" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -618,6 +622,10 @@ dev = [
     { name = "alembic", specifier = ">=1.13" },
     { name = "import-linter", specifier = ">=2.14" },
     { name = "pytest", specifier = ">=8" },
+    { name = "sqlalchemy", specifier = ">=2.0" },
+]
+migrate = [
+    { name = "alembic", specifier = ">=1.13" },
     { name = "sqlalchemy", specifier = ">=2.0" },
 ]
 
