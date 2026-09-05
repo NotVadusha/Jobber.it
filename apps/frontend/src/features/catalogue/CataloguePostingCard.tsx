@@ -15,7 +15,7 @@ export const CataloguePostingCard = ({
   posting: CataloguePosting
   resultNumber: number
   terms: readonly string[]
-}): ReactElement {
+}): ReactElement => {
   const titleId = `catalogue-posting-${resultNumber}`
 
   return (

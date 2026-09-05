@@ -41,7 +41,7 @@ const fetchCorpusMeta = async (signal?: AbortSignal): Promise<MetaResponse> => {
 const fetchPostgresSearch = async (
   request: PostgresSearchRequest,
   signal?: AbortSignal,
-): Promise<PostgresSearchResponse> => => {
+): Promise<PostgresSearchResponse> => {
   const response = await api.post<PostgresSearchResponse>(
     '/postings/query',
     request,
