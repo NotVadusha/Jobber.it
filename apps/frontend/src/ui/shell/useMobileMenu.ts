@@ -19,13 +19,13 @@ export function useMobileMenu(): MobileMenuControls {
   useEffect(() => {
     if (!open) return
 
-    function onKeyDown(event: KeyboardEvent): void {
+    const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key !== 'Escape') return
       setOpen(false)
       buttonRef.current?.focus()
     }
 
-    function onPointerDown(event: PointerEvent): void {
+    const onPointerDown = (event: PointerEvent): void => {
       if (headerRef.current?.contains(event.target as Node)) return
       setOpen(false)
     }

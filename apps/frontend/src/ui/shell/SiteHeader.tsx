@@ -6,7 +6,7 @@ import { LogoMark } from '@/ui/shell/LogoMark'
 import { MobileMenu } from '@/ui/shell/MobileMenu'
 import { useMobileMenu } from '@/ui/shell/useMobileMenu'
 import type { InternalHref, ShellNavItem } from '@/ui/shell/types'
-import { ThemeToggle } from '@/ui/theme'
+import { ThemeToggle } from '@/ui/ThemeToggle'
 
 const NAV_LINK_CLASS =
   'font-mono text-xs text-secondary transition-colors hover:text-primary aria-[current=page]:text-accent-text'

@@ -1,5 +1,5 @@
 import type { BestMatchResponse } from '@/api/search'
-import { Label } from '@/features/search/SearchForm'
+import { Label } from '@/features/search/Label'
 
 export type SearchTraceProps = {
   data: BestMatchResponse['data']

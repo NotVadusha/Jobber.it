@@ -3,29 +3,11 @@ import type { ReactElement } from 'react'
 import type { PostgresSearchResponse } from '@/api/search'
 import { HighlightedText } from '@/features/catalogue/HighlightedText'
 import { formatCompensation, useCompensationPeriod } from '@/features/jobs/compensation'
+import { SENIORITY_LABELS, WORKPLACE_LABELS } from '@/features/jobs/posting-labels'
 import { sourceLabel } from '@/features/jobs/source-labels'
 import { formatPostingDate } from '@/lib/format'
 
 type CataloguePosting = PostgresSearchResponse['data'][number]
-type Workplace = NonNullable<CataloguePosting['remotePolicy']> | 'unknown'
-type Seniority = NonNullable<CataloguePosting['seniority']> | 'unknown'
-
-const WORKPLACE_LABELS: Record<Workplace, string | null> = {
-  remote: 'Remote',
-  hybrid: 'Hybrid',
-  onsite: 'On-site',
-  unknown: null,
-}
-
-const SENIORITY_LABELS: Record<Seniority, string | null> = {
-  intern: 'Intern',
-  junior: 'Junior',
-  mid: 'Mid',
-  senior: 'Senior',
-  lead: 'Lead',
-  principal: 'Principal',
-  unknown: null,
-}
 
 export function CataloguePostingCard({
   posting,
@@ -43,12 +25,12 @@ export function CataloguePostingCard({
     period,
   )
   const postingDate = formatPostingDate(posting.postedAt, posting.firstSeenAt)
-  const remotePolicy: Workplace = posting.remotePolicy ?? 'unknown'
-  const seniorityValue: Seniority = posting.seniority ?? 'unknown'
+  const remotePolicy = posting.remotePolicy ?? 'unknown'
+  const seniorityValue = posting.seniority ?? 'unknown'
   const yearsRequired = posting.yearsRequired ?? null
   const stack = posting.stack ?? []
-  const workplace = WORKPLACE_LABELS[remotePolicy]
-  const seniority = SENIORITY_LABELS[seniorityValue]
+  const workplace = remotePolicy === 'unknown' ? null : WORKPLACE_LABELS[remotePolicy]
+  const seniority = seniorityValue === 'unknown' ? null : SENIORITY_LABELS[seniorityValue]
   const titleId = `catalogue-posting-${resultNumber}`
 
   return (

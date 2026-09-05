@@ -1,17 +1,10 @@
-import { useEffect, useRef, type ReactElement, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactElement } from 'react'
 
 import type { ProfileDocument } from '@/features/cv/read-profile'
+import { Label } from '@/features/search/Label'
 import type { JobsView } from '@/routing/jobs-model'
 
 export const QUERY_MAX_LENGTH = 500
-
-export function Label({ children }: { children: ReactNode }): ReactElement {
-  return (
-    <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-tertiary">
-      {children}
-    </span>
-  )
-}
 
 export type SearchFormProps = {
   view: JobsView
