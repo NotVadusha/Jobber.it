@@ -1,4 +1,4 @@
-import type { Route, RouteName } from '@/routing/hash-router'
+import type { Route, RouteName } from '@/routing/route-codec'
 import type { FooterGroup, ShellNavItem } from '@/ui/shell/types'
 
 export function buildShellNavigation(

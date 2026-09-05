@@ -1,4 +1,4 @@
-import { formatRoute, type Route } from '@/routing/hash-router'
+import { formatRoute, type Route } from '@/routing/route-codec'
 
 export type CopyPermalinkResult = {
   url: string
