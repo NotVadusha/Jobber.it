@@ -1,7 +1,8 @@
 import type { ReactElement } from 'react'
 
 import type { components } from '@/api/schema'
-import { Prose, ProseSection } from '@/ui/Prose'
+import { Prose } from '@/ui/Prose'
+import { ProseSection } from '@/ui/ProseSection'
 
 type RankingStage = components['schemas']['RankingStage']
 
