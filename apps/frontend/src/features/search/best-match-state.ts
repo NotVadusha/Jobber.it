@@ -2,7 +2,7 @@ import type { BestMatchRequest } from '@/api/search'
 
 export const REVEAL_STEP = 10
 
-export function isRankingPending(
+export const isRankingPending = (
   current: BestMatchRequest,
   ran: BestMatchRequest | null,
 ): boolean => {

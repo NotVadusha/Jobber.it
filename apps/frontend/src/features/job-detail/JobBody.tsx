@@ -20,7 +20,7 @@ const externalHost = (url: string): string | null => {
   }
 }
 
-export function JobBody({
+export const JobBody = ({
   posting,
   actions,
 }: {
