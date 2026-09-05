@@ -9,7 +9,8 @@ import {
 } from '@/features/cv/read-profile'
 import { RELEASES_URL } from '@/features/explain/project'
 import { DEVICE_STORAGE } from '@/lib/storage-keys'
-import { Prose, ProseSection } from '@/ui/Prose'
+import { Prose } from '@/ui/Prose'
+import { ProseSection } from '@/ui/ProseSection'
 
 const FORMATS = PROFILE_EXTENSIONS.map((extension) =>
   extension.replace('.', '').toUpperCase(),

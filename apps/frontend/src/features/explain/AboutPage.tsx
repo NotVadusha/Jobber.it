@@ -1,7 +1,8 @@
 import type { ReactElement } from 'react'
 
 import { CREATOR, CREATOR_LINKS } from '@/features/explain/project'
-import { Prose, ProseSection } from '@/ui/Prose'
+import { Prose } from '@/ui/Prose'
+import { ProseSection } from '@/ui/ProseSection'
 
 export function AboutPage(): ReactElement {
   return (
