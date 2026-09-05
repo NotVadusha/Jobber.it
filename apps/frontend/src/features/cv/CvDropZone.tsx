@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState, type DragEvent, type ReactElement }
 
 import { useCorpusMetaQuery } from '@/api/search'
 import { useCvConsent } from '@/features/cv/cv-consent'
+import { CvDisclosureFacts } from '@/features/cv/CvDisclosureFacts'
 import { providerLabel } from '@/features/cv/provider-labels'
 import {
   PROFILE_ACCEPT,
@@ -13,32 +14,6 @@ import {
 const CONTROL_CLASS =
   'min-h-10 rounded-sm border border-subtle px-4 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-secondary hover:border-strong hover:text-primary'
 
-const disclosureFacts = (provider: string | null): readonly string[] => {
-  const named = provider ?? 'a third-party language-model provider'
-  return [
-    'The file is read in this browser. The file itself is never uploaded.',
-    'Only the text extracted from it is sent, inside the search request.',
-    `That text is sent to ${named} to be rewritten into a retrieval query.`,
-    'Only the rewritten query is used to search the posting index. The CV text is not sent to the index.',
-    `Jobber stores neither the file nor its text. What ${named} does with it is governed by their policy, not Jobber's.`,
-    'CV text, the filename, and a CV-only search are never put into a shareable link.',
-    "This choice is remembered in this browser and is cleared with the site's data.",
-  ]
-}
-
-const Facts = ({ provider }: { provider: string | null }): ReactElement => {
-  return (
-    <ul className="mt-3 flex flex-col gap-1.5 text-xs leading-relaxed text-tertiary">
-      {disclosureFacts(provider).map((fact) => (
-        <li key={fact} className="flex gap-2">
-          <span aria-hidden="true">·</span>
-          <span>{fact}</span>
-        </li>
-      ))}
-    </ul>
-  )
-}
-
 export const CvDropZone = ({
   profile,
   onProfileChange,
@@ -49,8 +24,8 @@ export const CvDropZone = ({
   onReadError(error: ProfileReadError | null): void
 }): ReactElement => {
   const { granted, grant } = useCvConsent()
-  const meta = useCorpusMetaQuery()
-  const provider = providerLabel(meta.data?.data.rewriteProvider)
+  const { data: meta } = useCorpusMetaQuery()
+  const provider = providerLabel(meta?.data.rewriteProvider)
   const inputRef = useRef<HTMLInputElement>(null)
   const dragDepth = useRef(0)
   const [dragging, setDragging] = useState(false)
@@ -111,7 +86,7 @@ export const CvDropZone = ({
           A CV is optional. Search works from a typed query alone. If you attach one, this is
           exactly what happens to it.
         </p>
-        <Facts provider={provider} />
+        <CvDisclosureFacts provider={provider} />
         <button
           type="button"
           onClick={() => {
@@ -201,7 +176,7 @@ export const CvDropZone = ({
         <summary className="cursor-pointer font-mono text-[11px] uppercase tracking-[0.12em] text-secondary">
           What happens to this file
         </summary>
-        <Facts provider={provider} />
+        <CvDisclosureFacts provider={provider} />
       </details>
     </section>
   )
