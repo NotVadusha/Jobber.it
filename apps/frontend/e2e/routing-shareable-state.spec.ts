@@ -54,7 +54,7 @@ test.beforeEach(async ({ page }) => {
   })
 })
 
-async function mockSearch(page: import('@playwright/test').Page) {
+const mockSearch = async (page: import('@playwright/test').Page) => {
   let requests = 0
   await page.route('**/api/search', async (route) => {
     requests += 1

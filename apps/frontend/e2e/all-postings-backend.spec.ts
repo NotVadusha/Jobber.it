@@ -13,9 +13,9 @@ const emptyFilters = {
   posted_within: null,
 }
 
-function catalogueRequest(
+const catalogueRequest = (
   overrides: Record<string, unknown> = {},
-): Record<string, unknown> {
+): Record<string, unknown> => {
   return {
     query: '',
     filters: emptyFilters,
@@ -25,25 +25,25 @@ function catalogueRequest(
   }
 }
 
-function asObject(value: unknown): JsonObject {
+const asObject = (value: unknown): JsonObject => {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     throw new Error('Expected a JSON object')
   }
   return value as JsonObject
 }
 
-function dataRows(body: unknown): JsonObject[] {
+const dataRows = (body: unknown): JsonObject[] => {
   const data = asObject(body).data
   if (!Array.isArray(data)) throw new Error('Expected data to be an array')
   return data.map(asObject)
 }
 
-function pagination(body: unknown): JsonObject {
+const pagination = (body: unknown): JsonObject => {
   const meta = asObject(asObject(body).meta)
   return asObject(meta.pagination)
 }
 
-async function postCatalogue(page: Page, payload: unknown) {
+const postCatalogue = async (page: Page, payload: unknown) => {
   return page.evaluate(async (body) => {
     const response = await fetch('/api/postings/query', {
       method: 'POST',
@@ -60,7 +60,7 @@ async function postCatalogue(page: Page, payload: unknown) {
   }, payload)
 }
 
-async function loadApp(page: Page) {
+const loadApp = async (page: Page) => {
   await page.goto('/')
   await expect(page.locator('body')).toBeVisible()
 }

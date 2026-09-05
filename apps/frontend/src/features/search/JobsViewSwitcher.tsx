@@ -2,7 +2,7 @@ import type { ReactElement } from 'react'
 
 import type { JobsView } from '@/routing/jobs-model'
 
-export function JobsViewSwitcher({
+export const JobsViewSwitcher = ({
   view,
   bestEnabled,
   onViewChange,
@@ -10,7 +10,7 @@ export function JobsViewSwitcher({
   view: JobsView
   bestEnabled: boolean
   onViewChange(view: JobsView): void
-}): ReactElement {
+}): ReactElement => {
   const description = view === 'all'
     ? 'Every live posting matching your exact text and filters. Sorted by date or disclosed salary.'
     : 'Semantic matches ordered only by relevance. Filters apply when you run the search.'

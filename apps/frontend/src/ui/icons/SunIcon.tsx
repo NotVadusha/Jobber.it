@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
 
-export function SunIcon(): ReactElement {
+export const SunIcon = (): ReactElement => {
   return (
     <svg
       width="17"

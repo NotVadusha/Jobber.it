@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
 
-export function MoonIcon(): ReactElement {
+export const MoonIcon = (): ReactElement => {
   return (
     <svg
       width="17"

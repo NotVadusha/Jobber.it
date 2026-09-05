@@ -11,7 +11,7 @@ import { ThemeToggle } from '@/ui/ThemeToggle'
 const NAV_LINK_CLASS =
   'font-mono text-xs text-secondary transition-colors hover:text-primary aria-[current=page]:text-accent-text'
 
-export function SiteHeader({
+export const SiteHeader = ({
   homeHref,
   navigation,
   corpusSummary,
@@ -19,7 +19,7 @@ export function SiteHeader({
   homeHref: InternalHref
   navigation: readonly ShellNavItem[]
   corpusSummary?: string
-}): ReactElement {
+}): ReactElement => {
   const desktopItems = navigation.filter(
     (item) => item.placement === 'desktop' || item.placement === 'both',
   )

@@ -2,7 +2,7 @@ import type { ReactElement } from 'react'
 
 import { Skeleton } from '@/ui/Skeleton'
 
-export function CatalogueResultsSkeleton(): ReactElement {
+export const CatalogueResultsSkeleton = (): ReactElement => {
   return (
     <div role="status" aria-live="polite" aria-label="Loading postings" className="space-y-3">
       {Array.from({ length: 5 }, (_, index) => (

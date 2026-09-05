@@ -26,30 +26,30 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
-export function decodeTheme(value: unknown): Theme | null {
+export const decodeTheme = (value: unknown): Theme | null => {
   return value === 'light' || value === 'dark' ? value : null
 }
 
-export function resolveTheme(stored: unknown, prefersLight: boolean): ThemeState {
+export const resolveTheme = (stored: unknown, prefersLight: boolean): ThemeState => {
   const saved = decodeTheme(stored)
   return saved
     ? { theme: saved, source: 'stored' }
     : { theme: prefersLight ? 'light' : 'dark', source: 'system' }
 }
 
-function readDocumentTheme(): ThemeState {
+const readDocumentTheme = (): ThemeState => {
   const root = document.documentElement
   const theme = decodeTheme(root.dataset.theme) ?? 'dark'
   const source = root.dataset.themeSource === 'stored' ? 'stored' : 'system'
   return { theme, source }
 }
 
-function applyTheme(state: ThemeState): void {
+const applyTheme = (state: ThemeState): void => {
   document.documentElement.dataset.theme = state.theme
   document.documentElement.dataset.themeSource = state.source
 }
 
-function persistTheme(theme: Theme): void {
+const persistTheme = (theme: Theme): void => {
   try {
     window.localStorage.setItem(THEME_STORAGE_KEY, theme)
   } catch {
@@ -92,7 +92,7 @@ export function ThemeProvider({ children }: { children: ReactNode }): ReactEleme
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }
 
-export function useTheme(): ThemeContextValue {
+export const useTheme = (): ThemeContextValue => {
   const value = useContext(ThemeContext)
   if (!value) throw new Error('useTheme must be used inside ThemeProvider')
   return value

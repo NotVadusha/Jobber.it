@@ -19,11 +19,11 @@ export const COMPENSATION_PERIOD_STORAGE_KEY = 'jobber.compensation-period.v1'
 
 const CompensationContext = createContext<CompensationContextValue | null>(null)
 
-function decodeCompensationPeriod(value: unknown): CompensationPeriod | null {
+const decodeCompensationPeriod = (value: unknown): CompensationPeriod | null => {
   return value === 'annual' || value === 'monthly' ? value : null
 }
 
-function readCompensationPeriod(): CompensationPeriod {
+const readCompensationPeriod = (): CompensationPeriod => {
   try {
     return decodeCompensationPeriod(
       window.localStorage.getItem(COMPENSATION_PERIOD_STORAGE_KEY),
@@ -33,7 +33,7 @@ function readCompensationPeriod(): CompensationPeriod {
   }
 }
 
-function persistCompensationPeriod(period: CompensationPeriod): void {
+const persistCompensationPeriod = (period: CompensationPeriod): void => {
   try {
     window.localStorage.setItem(COMPENSATION_PERIOD_STORAGE_KEY, period)
   } catch {
@@ -41,11 +41,11 @@ function persistCompensationPeriod(period: CompensationPeriod): void {
   }
 }
 
-function displayedAmount(value: number, period: CompensationPeriod): number {
+const displayedAmount = (value: number, period: CompensationPeriod): number => {
   return period === 'annual' ? value : value / 12
 }
 
-function compactUsd(value: number): string {
+const compactUsd = (value: number): string => {
   if (value >= 1_000) {
     const thousands = value / 1_000
     const digits = thousands >= 100 || Number.isInteger(thousands) ? 0 : 1
@@ -54,22 +54,22 @@ function compactUsd(value: number): string {
   return `$${Math.round(value).toLocaleString('en-US')}`
 }
 
-export function compensationSuffix(period: CompensationPeriod): '/yr' | '/mo' {
+export const compensationSuffix = (period: CompensationPeriod): '/yr' | '/mo' => {
   return period === 'annual' ? '/yr' : '/mo'
 }
 
-export function formatCompensationValue(
+export const formatCompensationValue = (
   value: number,
   period: CompensationPeriod,
-): string {
+): string => {
   return `${compactUsd(displayedAmount(value, period))}${compensationSuffix(period)}`
 }
 
-export function formatCompensation(
+export const formatCompensation = (
   minimum: number | null | undefined,
   maximum: number | null | undefined,
   period: CompensationPeriod,
-): string | null {
+): string | null => {
   const hasMinimum = minimum !== null && minimum !== undefined
   const hasMaximum = maximum !== null && maximum !== undefined
   if (!hasMinimum && !hasMaximum) return null
@@ -88,11 +88,11 @@ export function formatCompensation(
   return formatCompensationValue(minimum ?? maximum ?? 0, period)
 }
 
-export function formatCompensationFloor(
+export const formatCompensationFloor = (
   minimum: number | null,
   includeUndisclosed: boolean,
   period: CompensationPeriod,
-): string {
+): string => {
   if (minimum === null) return 'Any salary'
   return `At least ${formatCompensationValue(minimum, period)}${
     includeUndisclosed ? ' or undisclosed' : ''
@@ -120,7 +120,7 @@ export function CompensationPeriodProvider({
   )
 }
 
-export function useCompensationPeriod(): CompensationContextValue {
+export const useCompensationPeriod = (): CompensationContextValue => {
   const value = useContext(CompensationContext)
   if (!value) {
     throw new Error(

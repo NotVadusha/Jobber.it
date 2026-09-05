@@ -11,7 +11,7 @@ import {
 import { canonicalList, firstValid, parseIntegerInRange } from '@/routing/jobs-query-values'
 import { defaultViewForQuery, normalizeJobsState } from '@/routing/jobs-state'
 
-export function decodeJobsState(rawQuery: string): JobsUrlState {
+export const decodeJobsState = (rawQuery: string): JobsUrlState => {
   const params = new URLSearchParams(rawQuery)
   const query = (params.get('q') ?? '').trim().slice(0, MAX_QUERY_LENGTH)
   const requestedView = firstValid(params, 'view', value =>
@@ -47,11 +47,11 @@ export function decodeJobsState(rawQuery: string): JobsUrlState {
   }
 }
 
-function encodeValue(value: string): string {
+const encodeValue = (value: string): string => {
   return encodeURIComponent(value).replaceAll('%2C', ',')
 }
 
-export function encodeJobsState(input: JobsUrlState): string {
+export const encodeJobsState = (input: JobsUrlState): string => {
   const { view, query, filters, sort, page } = normalizeJobsState(input)
   const parts: string[] = []
   const add = (name: string, value: string) => {

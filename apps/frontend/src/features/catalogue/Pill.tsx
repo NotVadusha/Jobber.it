@@ -6,7 +6,7 @@ export type PillProps = {
   onClick(): void
 }
 
-export function Pill({ pressed, children, onClick }: PillProps): ReactElement {
+export const Pill = ({ pressed, children, onClick }: PillProps): ReactElement => {
   return (
     <button
       type="button"

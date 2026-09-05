@@ -5,12 +5,12 @@ import './catalogue.css'
 
 export type CatalogueFiltersProps = Omit<FilterFieldsProps, 'idPrefix'>
 
-export function CatalogueFilters({
+export const CatalogueFilters = ({
   filters,
   activeCount,
   onChange,
   onClear,
-}: CatalogueFiltersProps): ReactElement {
+}: CatalogueFiltersProps): ReactElement => {
   const [open, setOpen] = useState(false)
   const dialogRef = useRef<HTMLDialogElement>(null)
   const openerRef = useRef<HTMLButtonElement>(null)

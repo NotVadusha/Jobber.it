@@ -9,12 +9,12 @@ export type CataloguePaginationProps = {
   onPageChange(page: number): void
 }
 
-export function CataloguePagination({
+export const CataloguePagination = ({
   page,
   totalPages,
   disabled,
   onPageChange,
-}: CataloguePaginationProps): ReactElement | null {
+}: CataloguePaginationProps): ReactElement | null => {
   const items = usePaginationItems(page, totalPages)
   if (totalPages <= 1) return null
 

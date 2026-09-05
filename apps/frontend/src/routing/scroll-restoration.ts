@@ -4,7 +4,7 @@ import { readJobberHistory } from '@/routing/history-state'
 
 const restoredEntries = new Set<string>()
 
-export function useJobsScrollRestoration(ready: boolean): void {
+export const useJobsScrollRestoration = (ready: boolean): void => {
   useEffect(() => {
     if (!ready) return
 

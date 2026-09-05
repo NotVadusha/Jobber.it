@@ -1,8 +1,8 @@
-export function splitTerms(text: string): string[] {
+export const splitTerms = (text: string): string[] => {
   return text.toLowerCase().split(/[^a-z0-9+#.]+/).filter(Boolean)
 }
 
-export function formatPostedMonth(value: string | null | undefined): string | null {
+export const formatPostedMonth = (value: string | null | undefined): string | null => {
   if (!value) return null
   const date = new Date(value)
   if (Number.isNaN(date.valueOf())) return null
@@ -20,10 +20,10 @@ const postingDateFormatter = new Intl.DateTimeFormat('en-US', {
   year: 'numeric',
 })
 
-export function formatPostingDate(
+export const formatPostingDate = (
   postedAt: string | null | undefined,
   firstSeenAt: string | null | undefined,
-): PostingDatePresentation | null {
+): PostingDatePresentation | null => {
   const value = postedAt ?? firstSeenAt
   if (!value) return null
 

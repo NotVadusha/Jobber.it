@@ -25,24 +25,24 @@ export type FilterFieldsProps = {
   onClear(): void
 }
 
-function selectedValues<T extends string>(
+const selectedValues = <T extends string>(
   values: readonly T[],
   value: T,
   order: readonly T[],
-): T[] {
+): T[] => {
   const selected = new Set(values)
   if (selected.has(value)) selected.delete(value)
   else selected.add(value)
   return order.filter((item) => selected.has(item))
 }
 
-export function FilterFields({
+export const FilterFields = ({
   idPrefix,
   filters,
   activeCount,
   onChange,
   onClear,
-}: FilterFieldsProps): ReactElement {
+}: FilterFieldsProps): ReactElement => {
   const { period } = useCompensationPeriod()
   const experienceValue = filters.experience_years ?? 61
   const salaryValue = filters.min_salary ?? 0

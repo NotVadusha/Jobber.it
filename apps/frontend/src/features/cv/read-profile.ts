@@ -15,7 +15,7 @@ export class ProfileReadError extends Error {
 
 type PdfExtractor = (file: File) => Promise<string>
 
-async function extractPdfText(file: File): Promise<string> {
+const extractPdfText = async (file: File): Promise<string> => {
   const pdfjs = await import('pdfjs-dist')
   pdfjs.GlobalWorkerOptions.workerSrc = (
     await import('pdfjs-dist/build/pdf.worker.min.mjs?url')
@@ -38,10 +38,10 @@ async function extractPdfText(file: File): Promise<string> {
   return pages.join('\n\n').trim()
 }
 
-export async function readProfile(
+export const readProfile = async (
   file: File,
   pdfExtractor: PdfExtractor = extractPdfText,
-): Promise<ProfileDocument> {
+): Promise<ProfileDocument> => {
   try {
     const lowerName = file.name.toLowerCase()
     const isPdf = file.type === 'application/pdf' || lowerName.endsWith('.pdf')

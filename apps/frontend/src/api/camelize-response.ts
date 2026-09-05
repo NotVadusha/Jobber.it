@@ -13,17 +13,17 @@ export type KeysToCamelCase<Value> =
         }
       : Value
 
-function camelizeKey(key: string): string {
+const camelizeKey = (key: string): string => {
   return key
     .toLowerCase()
     .replace(/_([a-z0-9])/g, (_match, letter: string) => letter.toUpperCase())
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-export function camelizeResponse<Value>(value: Value): KeysToCamelCase<Value> {
+export const camelizeResponse = <Value>(value: Value): KeysToCamelCase<Value> => {
   if (Array.isArray(value)) {
     return value.map((item) => camelizeResponse(item)) as KeysToCamelCase<Value>
   }

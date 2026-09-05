@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
 
-export function MenuIcon(): ReactElement {
+export const MenuIcon = (): ReactElement => {
   return (
     <svg
       width="18"

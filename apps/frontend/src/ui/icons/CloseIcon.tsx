@@ -3,7 +3,7 @@ import type { ReactElement } from 'react'
 const VIEWBOX = 18
 const STROKE_PX = 1.4
 
-export function CloseIcon({ size = 18 }: { size?: number }): ReactElement {
+export const CloseIcon = ({ size = 18 }: { size?: number }): ReactElement => {
   return (
     <svg
       width={size}

@@ -41,7 +41,7 @@ type DraftAction =
   | { type: 'query.changed'; query: string }
   | { type: 'filters.changed'; filters: JobsUrlFilters }
 
-function searchDraftReducer(_draft: SearchDraft, action: DraftAction): SearchDraft {
+const searchDraftReducer = (_draft: SearchDraft, action: DraftAction): SearchDraft => {
   switch (action.type) {
     case 'route.changed':
       return { query: action.state.query, filters: action.state.filters }
@@ -52,10 +52,10 @@ function searchDraftReducer(_draft: SearchDraft, action: DraftAction): SearchDra
   }
 }
 
-function buildBestMatchRequest(
+const buildBestMatchRequest = (
   state: JobsUrlState,
   profileText: string,
-): BestMatchRequest {
+): BestMatchRequest => {
   return {
     query: state.query.trim(),
     profile_text: profileText,

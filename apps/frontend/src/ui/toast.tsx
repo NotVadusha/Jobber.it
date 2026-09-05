@@ -31,10 +31,10 @@ type ToastContextValue = {
 
 const ToastContext = createContext<ToastContextValue | null>(null)
 
-function normalizeToast(
+const normalizeToast = (
   { message, durationMs, tone }: ToastInput,
   id: number,
-): VisibleToast | null {
+): VisibleToast | null => {
   const normalizedMessage = message.trim()
   if (!normalizedMessage) {
     if (import.meta.env.DEV) throw new Error('Toast message must not be empty')
@@ -96,7 +96,7 @@ export function ToastProvider({ children }: { children: ReactNode }): ReactEleme
   )
 }
 
-export function useToast(): ToastContextValue {
+export const useToast = (): ToastContextValue => {
   const value = useContext(ToastContext)
   if (!value) throw new Error('useToast must be used inside ToastProvider')
   return value

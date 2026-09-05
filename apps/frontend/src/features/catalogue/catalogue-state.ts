@@ -4,18 +4,18 @@ import { normalizeJobsState, toApiFilters } from '@/routing/jobs-state'
 
 export const CATALOGUE_DEBOUNCE_MS = 350
 
-export function emptyCatalogueFilters(): JobsUrlFilters {
+export const emptyCatalogueFilters = (): JobsUrlFilters => {
   return defaultJobsState().filters
 }
 
-export function activeCatalogueFilterCount({
+export const activeCatalogueFilterCount = ({
   remote_policy: workplace,
   seniority,
   source,
   experience_years: experience,
   min_salary: minimumSalary,
   posted_within: postedWithin,
-}: JobsUrlFilters): number {
+}: JobsUrlFilters): number => {
   return (
     workplace.length +
     seniority.length +
@@ -26,12 +26,12 @@ export function activeCatalogueFilterCount({
   )
 }
 
-export function buildPostgresSearchRequest({
+export const buildPostgresSearchRequest = ({
   query,
   filters,
   sort,
   page,
-}: JobsUrlState): PostgresSearchRequest {
+}: JobsUrlState): PostgresSearchRequest => {
   return {
     query,
     filters: toApiFilters(filters),
@@ -40,7 +40,7 @@ export function buildPostgresSearchRequest({
   }
 }
 
-export function buildCatalogueDraftState({
+export const buildCatalogueDraftState = ({
   applied,
   query,
   filters,
@@ -48,7 +48,7 @@ export function buildCatalogueDraftState({
   applied: JobsUrlState
   query: string
   filters: JobsUrlFilters
-}): JobsUrlState {
+}): JobsUrlState => {
   return normalizeJobsState({
     ...applied,
     view: 'all',
@@ -58,13 +58,13 @@ export function buildCatalogueDraftState({
   })
 }
 
-export function shouldShowWelcome({
+export const shouldShowWelcome = ({
   view,
   query,
   filters,
   sort,
   page,
-}: JobsUrlState): boolean {
+}: JobsUrlState): boolean => {
   return (
     view === 'all' &&
     query.length === 0 &&

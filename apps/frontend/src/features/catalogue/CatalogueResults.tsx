@@ -29,7 +29,7 @@ export type CatalogueResultsProps = {
 const actionButtonClass =
   'min-h-10 rounded-sm border border-subtle bg-surface px-3 font-mono text-xs text-secondary hover:border-accent hover:text-accent'
 
-export function CatalogueResults({
+export const CatalogueResults = ({
   query,
   activeFilterCount,
   sort,
@@ -43,7 +43,7 @@ export function CatalogueResults({
   onClearFilters,
   onClearQuery,
   onRetry,
-}: CatalogueResultsProps): ReactElement {
+}: CatalogueResultsProps): ReactElement => {
   const terms = useMemo(() => literalQueryTerms(query), [query])
 
   if (error) {

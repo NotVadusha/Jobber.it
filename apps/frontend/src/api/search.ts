@@ -38,23 +38,23 @@ export const searchQueryKeys = {
   pineconeIdle: () => [...searchQueryKeys.all, 'pinecone', 'idle'] as const,
 }
 
-async function fetchCorpusMeta(signal?: AbortSignal): Promise<MetaResponse> {
+const fetchCorpusMeta = async (signal?: AbortSignal): Promise<MetaResponse> => {
   const response = await api.get<MetaResponse>('/meta', { signal })
   return response.data
 }
 
-async function fetchPineconeSearch(
+const fetchPineconeSearch = async (
   input: BestMatchRequest,
   signal?: AbortSignal,
-): Promise<BestMatchResponse> {
+): Promise<BestMatchResponse> => {
   const response = await api.post<BestMatchResponse>('/search', input, { signal })
   return response.data
 }
 
-async function fetchPostgresSearch(
+const fetchPostgresSearch = async (
   request: PostgresSearchRequest,
   signal?: AbortSignal,
-): Promise<PostgresSearchResponse> {
+): Promise<PostgresSearchResponse> => {
   const response = await api.post<PostgresSearchResponse>(
     '/postings/query',
     request,
@@ -63,7 +63,7 @@ async function fetchPostgresSearch(
   return response.data
 }
 
-export function useCorpusMetaQuery() {
+export const useCorpusMetaQuery = () => {
   return useQuery({
     queryKey: searchQueryKeys.corpusMeta(),
     queryFn: ({ signal }) => fetchCorpusMeta(signal),
@@ -72,9 +72,9 @@ export function useCorpusMetaQuery() {
   })
 }
 
-export function usePostgresSearchQuery(
+export const usePostgresSearchQuery = (
   request: PostgresSearchRequest | null,
-) {
+) => {
   return useQuery({
     queryKey: request
       ? searchQueryKeys.postgres(request)
@@ -89,9 +89,9 @@ export function usePostgresSearchQuery(
   })
 }
 
-export function usePineconeSearchQuery(
+export const usePineconeSearchQuery = (
   selection: PineconeSearchSelection | null,
-) {
+) => {
   return useQuery({
     queryKey: selection
       ? searchQueryKeys.pinecone(selection.executionId)

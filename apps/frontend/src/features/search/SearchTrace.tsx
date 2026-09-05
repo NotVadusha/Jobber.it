@@ -7,7 +7,7 @@ export type SearchTraceProps = {
   busy: boolean
 }
 
-export function SearchTrace({ data, tookMs, busy }: SearchTraceProps) {
+export const SearchTrace = ({ data, tookMs, busy }: SearchTraceProps) => {
   return (
     <section className="mt-10 border border-subtle bg-surface" aria-label="Retrieval trace">
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-b border-subtle px-5 py-3">

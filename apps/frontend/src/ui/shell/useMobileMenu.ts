@@ -8,7 +8,7 @@ export type MobileMenuControls = {
   buttonRef: RefObject<HTMLButtonElement | null>
 }
 
-export function useMobileMenu(): MobileMenuControls {
+export const useMobileMenu = (): MobileMenuControls => {
   const [open, setOpen] = useState(false)
   const headerRef = useRef<HTMLElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)

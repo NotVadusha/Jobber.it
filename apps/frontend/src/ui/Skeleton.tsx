@@ -5,7 +5,7 @@ export type SkeletonProps = {
   label?: string
 }
 
-export function Skeleton({ className, label }: SkeletonProps): ReactElement {
+export const Skeleton = ({ className, label }: SkeletonProps): ReactElement => {
   if (!label) {
     return <span aria-hidden="true" className={`ui-skeleton block ${className ?? ''}`} />
   }
