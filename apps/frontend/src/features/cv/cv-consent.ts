@@ -38,7 +38,7 @@ const getSnapshot = (): boolean => {
   return snapshot
 }
 
-export const useCvConsent = (): => { granted: boolean; grant(): void } {
+export const useCvConsent = (): { granted: boolean; grant(): void } => {
   const granted = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
 
   const grant = useCallback(() => {
