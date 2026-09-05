@@ -2,7 +2,9 @@ import type { ReactElement, ReactNode } from 'react'
 
 import type { PostingDetail } from '@/api/postings'
 import { JobRankingContext } from '@/features/job-detail/JobRankingContext'
-import { PostingFacts, PostingStack } from '@/features/jobs/PostingFacts'
+import { JobSection } from '@/features/job-detail/JobSection'
+import { PostingFacts } from '@/features/jobs/PostingFacts'
+import { PostingStack } from '@/features/jobs/PostingStack'
 import { sourceLabel } from '@/features/jobs/source-labels'
 import { SaveJobButton } from '@/features/saved/SaveJobButton'
 import { formatAbsoluteDate } from '@/lib/format'
@@ -18,21 +20,7 @@ const externalHost = (url: string): string | null => {
   }
 }
 
-const Section = ({ heading, text }: { heading: string; text: string | null }): ReactElement | null => {
-  if (!text) return null
-  return (
-    <section className="mt-8">
-      <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-secondary">
-        {heading}
-      </h2>
-      <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-secondary [overflow-wrap:anywhere]">
-        {text}
-      </p>
-    </section>
-  )
-}
-
-export const JobBody = ({
+export function JobBody({
   posting,
   actions,
 }: {
@@ -107,9 +95,9 @@ export const JobBody = ({
 
       <JobRankingContext postingId={posting.id} />
 
-      <Section heading="Requirements" text={posting.requirements ?? null} />
-      <Section heading="Responsibilities" text={posting.responsibilities ?? null} />
-      <Section heading="Description" text={posting.description ?? null} />
+      <JobSection heading="Requirements" text={posting.requirements ?? null} />
+      <JobSection heading="Responsibilities" text={posting.responsibilities ?? null} />
+      <JobSection heading="Description" text={posting.description ?? null} />
     </article>
   )
 }

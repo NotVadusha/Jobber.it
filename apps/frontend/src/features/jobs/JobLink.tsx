@@ -11,7 +11,7 @@ export const JobLink = ({
   postingId: string
   className?: string
   children: ReactNode
-}): ReactElement => {
+}): ReactElement {
   const onClick = (event: MouseEvent<HTMLAnchorElement>): void => {
     if (!isPlainPrimaryClick(event.nativeEvent)) return
     event.preventDefault()
