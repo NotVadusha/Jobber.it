@@ -5,7 +5,7 @@ import re
 
 from ..apify import run_actor
 from ..http import Fetcher
-from .base import RawPosting, _iso, html_to_text
+from .base import RawPosting, _iso, html_to_text, html_to_markdown
 
 JOB_ID = re.compile(r"/jobs/view/(?:.*-)?(\d+)")
 DATE_ONLY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -59,6 +59,7 @@ def _posting(item: dict) -> RawPosting | None:
         location_raw=_text(item, "location") or None,
         posted_at=_iso(_posted_at(item)),
         extra={
+            "description_markdown": html_to_markdown(item.get("descriptionHtml")),
             "employment_type": _text(item, "employmentType") or None,
             "seniority": _text(item, "seniorityLevel") or None,
             "job_function": _text(item, "jobFunction") or None,

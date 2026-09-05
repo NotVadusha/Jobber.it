@@ -9,7 +9,7 @@ import type { InternalHref, ShellNavItem } from '@/ui/shell/types'
 import { ThemeToggle } from '@/ui/ThemeToggle'
 
 const NAV_LINK_CLASS =
-  'font-mono text-xs text-secondary transition-colors hover:text-primary aria-[current=page]:text-accent-text'
+  'text-sm font-medium text-secondary transition-colors hover:text-primary aria-[current=page]:text-accent-text'
 
 export const SiteHeader = ({
   homeHref,
@@ -34,12 +34,12 @@ export const SiteHeader = ({
       ref={headerRef}
       className="sticky top-0 z-40 border-b border-subtle bg-canvas/80 backdrop-blur supports-[backdrop-filter]:bg-canvas/60"
     >
-      <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-4 md:px-6">
+      <div className="mx-auto flex max-w-[var(--layout-content-max)] items-center justify-between gap-4 px-4 py-4 md:px-6">
         <LogoMark homeHref={homeHref} />
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 sm:gap-6">
           {corpusSummary && (
-            <span className="hidden font-mono text-[11px] uppercase tracking-[0.2em] text-secondary lg:inline">
+            <span className="hidden rounded-full bg-surface-raised px-3 py-1.5 text-xs text-secondary xl:inline">
               {corpusSummary}
             </span>
           )}
@@ -62,7 +62,7 @@ export const SiteHeader = ({
             </nav>
           )}
 
-          <ThemeToggle />
+          <div className="border-l border-strong pl-4 sm:pl-6"><ThemeToggle /></div>
 
           {mobileItems.length > 0 && (
             <button

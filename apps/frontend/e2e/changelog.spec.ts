@@ -48,7 +48,7 @@ const openChangelog = async (page: Page): Promise<void> => {
 }
 
 const entries = (page: Page) => {
-  return page.locator('#main-content').getByRole('listitem')
+  return page.locator('#main-content ul').first().locator(':scope > li')
 }
 
 test('a populated response renders one entry per release, newest first', async ({ page }) => {
@@ -78,13 +78,13 @@ test("an entry's link is built from the repository constant and tag, not html_ur
 
 test('a hostile body renders as visible text, executes nothing, and does not widen the document', async ({ page }) => {
   const longToken = 'x'.repeat(400)
-  const hostileBody = `<script>alert(1)</script>\n- a list-like line\n${longToken}`
+  const hostileBody = `<script>alert(1)</script>\n\n- a list-like line\n${longToken}`
   await fulfilReleases(page, [release({ body: hostileBody })])
   await openChangelog(page)
 
   await expect(page.getByText('alert(1)')).toBeVisible()
   await expect(page.locator('#main-content script')).toHaveCount(0)
-  await expect(entries(page).locator('ul, ol, li')).toHaveCount(0)
+  await expect(entries(page).getByRole('listitem').first()).toContainText('a list-like line')
 
   const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth)
   const clientWidth = await page.evaluate(() => document.documentElement.clientWidth)
@@ -133,6 +133,7 @@ test('a reload within the freshness window renders from cache and makes no reque
   await openChangelog(page)
   await expect(entries(page)).toHaveCount(1)
   expect(requested).toBe(false)
+  await expect(page.getByText(/GitHub could not be reached/)).toHaveCount(0)
 })
 
 test('with a stale cache present and the request failing, the cached entries render under a fetch-date notice', async ({ page }) => {

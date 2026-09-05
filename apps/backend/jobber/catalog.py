@@ -50,7 +50,7 @@ _DETAIL_FIELDS = (
     "requirements_text",
     "responsibilities_text",
 )
-_DETAIL_COLUMNS_SQL = ", ".join(_DETAIL_FIELDS)
+_DETAIL_COLUMNS_SQL = ", ".join(_DETAIL_FIELDS) + ", extra->>'description_markdown' as description_markdown"
 
 _POSTED_WITHIN_INTERVAL = {
     PostedWithin.DAY: "1 day",
@@ -178,6 +178,7 @@ def _posting_detail(row: Mapping[str, object]) -> PostingDetail:
         **_resolved_payload(row),
         "last_seen_at": row["last_seen_at"],
         "description": _text(row["description_text"]),
+        "description_markdown": _text(row.get("description_markdown")),
         "requirements": _text(row["requirements_text"]),
         "responsibilities": _text(row["responsibilities_text"]),
     })

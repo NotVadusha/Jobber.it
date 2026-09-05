@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 from typing import Iterator
 
 from ..http import Fetcher
-from .base import RawPosting, _iso, html_to_text
+from .base import RawPosting, _iso, html_to_text, html_to_markdown
 
 
 def dou(fetch: Fetcher, categories: list[str], **_) -> Iterator[RawPosting]:
@@ -30,5 +30,5 @@ def dou(fetch: Fetcher, categories: list[str], **_) -> Iterator[RawPosting]:
                 description_text=html_to_text(item.findtext("description")),
                 location_raw=location,
                 posted_at=_iso(item.findtext("pubDate")),
-                extra={"category": category, "raw_title": raw_title},
+                extra={"category": category, "raw_title": raw_title, "description_markdown": html_to_markdown(item.findtext("description"))},
             )

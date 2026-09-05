@@ -4,7 +4,7 @@ from html import unescape
 from typing import Iterator
 
 from ..http import Fetcher
-from .base import RawPosting, _iso, boards, html_to_text
+from .base import RawPosting, _iso, boards, html_to_text, html_to_markdown
 
 
 def greenhouse(fetch: Fetcher, companies: list[str], **_) -> Iterator[RawPosting]:
@@ -21,6 +21,7 @@ def greenhouse(fetch: Fetcher, companies: list[str], **_) -> Iterator[RawPosting
                 location_raw=(job.get("location") or {}).get("name"),
                 posted_at=_iso(job.get("first_published") or job.get("updated_at")),
                 extra={
+                    "description_markdown": html_to_markdown(unescape(job.get("content") or "")),
                     "board": slug,
                     "departments": [d.get("name") for d in job.get("departments") or []],
                     "offices": [o.get("name") for o in job.get("offices") or []],

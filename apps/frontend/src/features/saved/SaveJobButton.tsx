@@ -1,5 +1,6 @@
 import { useId, type ReactElement } from 'react'
 
+import { SECONDARY_ACTION } from '@/ui/action-styles'
 import { SAVED_JOBS_LIMIT, useSavedJobs, type SaveTarget } from '@/features/saved/saved-jobs'
 
 export const SaveJobButton = ({
@@ -22,7 +23,7 @@ export const SaveJobButton = ({
         aria-describedby={blocked ? limitId : undefined}
         disabled={blocked}
         onClick={() => (saved ? remove(target.id) : save(target))}
-        className={className ?? 'min-h-9 rounded-sm border border-subtle px-3 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-secondary transition-colors hover:border-strong hover:text-primary aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent disabled:cursor-not-allowed disabled:text-tertiary'}
+        className={className ?? `${SECONDARY_ACTION} aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent-text`}
       >
         {saved ? 'Saved' : 'Save'}
         <span className="sr-only">

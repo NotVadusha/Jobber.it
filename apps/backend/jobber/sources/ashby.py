@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Iterator
 
 from ..http import Fetcher
-from .base import RawPosting, _iso, boards, html_to_text
+from .base import RawPosting, _iso, boards, html_to_text, html_to_markdown
 
 
 def ashby(fetch: Fetcher, companies: list[str], **_) -> Iterator[RawPosting]:
@@ -24,6 +24,7 @@ def ashby(fetch: Fetcher, companies: list[str], **_) -> Iterator[RawPosting]:
                 location_raw=job.get("location"),
                 posted_at=_iso(job.get("publishedAt")),
                 extra={
+                    "description_markdown": html_to_markdown(job.get("descriptionHtml")),
                     "board": slug,
                     "department": job.get("department"),
                     "team": job.get("team"),

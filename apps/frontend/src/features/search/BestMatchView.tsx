@@ -51,7 +51,7 @@ export const BestMatchView = ({
 
   if (!selection) {
     return (
-      <div className="mt-10">
+      <div className="min-w-0">
         <PageState
           kind="empty"
           title="Best matches has not run yet"
@@ -62,7 +62,7 @@ export const BestMatchView = ({
   }
 
   return (
-    <div className="mt-10">
+    <div className="min-w-0">
       {traced && (
         <BestMatchTrace
           stages={traced.stages}

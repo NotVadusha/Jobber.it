@@ -125,6 +125,7 @@ class ResolvedPosting(PostingSummary):
 class PostingDetail(ResolvedPosting):
     last_seen_at: datetime
     description: str | None = None
+    description_markdown: str | None = None
     requirements: str | None = None
     responsibilities: str | None = None
 

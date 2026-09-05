@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 from selectolax.parser import HTMLParser
 
 from ..http import Fetcher
-from .base import RawPosting, html_to_text
+from .base import RawPosting, html_to_text, html_to_markdown
 
 
 def djinni(
@@ -64,6 +64,7 @@ def _card(card, keyword: str) -> RawPosting | None:
         location_raw=text_of("span.location-text"),
         posted_at=_posted_at(card),
         extra={
+            "description_markdown": html_to_markdown(description.html) if description else "",
             "keyword": keyword,
             "salary_text": text_of("span.text-success"),
             "meta_line": re.sub(r"\s+", " ", meta.text(separator=" ", strip=True)) if meta else None,

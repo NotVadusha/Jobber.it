@@ -5,7 +5,6 @@ import { ApiError } from '@/api/client'
 import { CataloguePagination } from '@/features/catalogue/CataloguePagination'
 import { CataloguePostingCard } from '@/features/catalogue/CataloguePostingCard'
 import { CatalogueResultsSkeleton } from '@/features/catalogue/CatalogueResultsSkeleton'
-import { CompensationPeriodToggle } from '@/features/jobs/CompensationPeriodToggle'
 import { literalQueryTerms } from '@/features/jobs/HighlightedText'
 import type { BrowseSort } from '@/routing/jobs-model'
 import { PageState } from '@/ui/PageState'
@@ -136,7 +135,7 @@ export const CatalogueResults = ({
           </span>
         </h2>
         <span className="flex-1" />
-        <CompensationPeriodToggle />
+
         <label className="flex items-center gap-2 font-mono text-[11px] text-tertiary">
           Sort
           <select

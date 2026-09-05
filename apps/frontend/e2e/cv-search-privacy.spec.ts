@@ -36,6 +36,7 @@ const consentButton = (page: Page): Locator => {
 }
 
 const grantConsentViaGesture = async (page: Page): Promise<void> => {
+  await page.getByRole('button', { name: 'Add CV', exact: true }).click()
   const chooser = page.waitForEvent('filechooser')
   await consentButton(page).click()
   const fileChooser = await chooser
@@ -58,6 +59,8 @@ test.describe('before consent', () => {
 
     const region = cvRegion(page)
     await expect(region).toBeVisible()
+    await expect(region.getByRole('heading', { name: 'Search with your CV' })).toHaveCount(0)
+    await region.getByRole('button', { name: 'Add CV', exact: true }).click()
     await expect(region.getByRole('heading', { name: 'Search with your CV' })).toBeVisible()
     await expect(consentButton(page)).toBeVisible()
 
@@ -353,11 +356,13 @@ test.describe('after consent', () => {
 
 test('the disclosure names the meta-reported provider, and falls back honestly when /api/meta fails', async ({ page }) => {
   await page.goto('/')
+  await page.getByRole('button', { name: 'Add CV', exact: true }).click()
   await expect(cvRegion(page)).toContainText('OpenAI')
 
   await page.route('**/api/meta', (route) => route.abort())
   await page.reload()
 
+  await page.getByRole('button', { name: 'Add CV', exact: true }).click()
   await expect(cvRegion(page)).toContainText('a third-party language-model provider')
   await expect(consentButton(page)).toBeEnabled()
 })

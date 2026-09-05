@@ -56,7 +56,7 @@ export const BestMatchTrace = ({
 
   return (
     <section
-      className="mt-10 rounded-md border border-subtle bg-surface"
+      className="rounded-md border border-subtle bg-surface"
       aria-label="Retrieval trace"
       aria-busy={streaming}
     >

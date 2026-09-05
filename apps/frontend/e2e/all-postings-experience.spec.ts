@@ -37,7 +37,8 @@ const postingItems = (page: Page) => {
 test('shows factual welcome counts and the real newest page without browse-only lies', async ({ page }) => {
   await openJobs(page)
 
-  await expect(welcome(page).getByText('44 live postings', { exact: true })).toBeVisible()
+  await expect(welcome(page).getByText(/44 live postings across/)).toBeVisible()
+  await welcome(page).locator('summary').click()
   const counts = page.getByRole('list', { name: 'Live posting counts by source' })
   await expect(
     counts.getByRole('listitem').filter({ hasText: 'Greenhouse company boards' }).getByText('7'),
@@ -99,7 +100,7 @@ test('uses canonical filter controls including principal and candidate experienc
   const query = page.getByRole('textbox', { name: 'Search postings' })
   await changeAndWait(page, () => query.fill('experiencebeacon'))
   await changeAndWait(page, () =>
-    page.getByRole('slider', { name: 'Candidate experience' }).fill('3'),
+    page.getByRole('spinbutton', { name: 'Candidate experience' }).fill('3'),
   )
   await expect(postingItems(page)).toHaveCount(2)
   await expect(activeFilters(page).getByText('I have 3 years', { exact: true })).toBeVisible()
@@ -133,7 +134,7 @@ test('keeps annual salary canonical while monthly presentation persists', async 
   const query = page.getByRole('textbox', { name: 'Search postings' })
   await changeAndWait(page, () => query.fill('salarybeacon'))
   await changeAndWait(page, () =>
-    page.getByRole('slider', { name: 'Minimum salary' }).fill('200000'),
+    page.getByRole('spinbutton', { name: 'Minimum salary' }).fill('200000'),
   )
 
   await expect(postingItems(page)).toHaveCount(2)
@@ -200,7 +201,7 @@ test('offers useful no-result escapes without clearing the query accidentally', 
   await expect(page.getByText('No postings match this search')).toBeVisible()
   await page.getByRole('button', { name: 'Clear search' }).click()
   await expect(page).toHaveURL(/#\/jobs$/)
-  await expect(page.getByText('jobber — live corpus')).toBeVisible()
+  await expect(welcome(page)).toBeVisible()
 })
 
 test('uses an accessible mobile filter dialog and never overflows 320px', async ({ page }) => {

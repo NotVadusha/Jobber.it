@@ -2,6 +2,7 @@ import type { ReactElement } from 'react'
 
 import { releaseUrl, type Release } from '@/features/explain/changelog-data'
 import { formatAbsoluteDate } from '@/lib/format'
+import { Markdown } from '@/ui/Markdown'
 
 export const ReleaseEntry = ({ release }: { release: Release }): ReactElement => {
   const published = formatAbsoluteDate(release.publishedAt)
@@ -24,9 +25,7 @@ export const ReleaseEntry = ({ release }: { release: Release }): ReactElement =>
       </div>
 
       {release.body && (
-        <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-secondary [overflow-wrap:anywhere]">
-          {release.body}
-        </p>
+        <div className="mt-5"><Markdown text={release.body} /></div>
       )}
 
       <a

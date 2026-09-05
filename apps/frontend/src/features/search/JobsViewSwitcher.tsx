@@ -16,7 +16,7 @@ export const JobsViewSwitcher = ({
     : 'Semantic matches ordered only by relevance. Filters apply when you run the search.'
 
   return (
-    <section aria-label="Jobs view" className="mt-8">
+    <section aria-label="Jobs view" className="mt-5">
       <div className="inline-flex rounded-md border border-subtle bg-surface p-1">
         <button
           type="button"

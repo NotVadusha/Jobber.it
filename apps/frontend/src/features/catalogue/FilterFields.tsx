@@ -44,8 +44,8 @@ export const FilterFields = ({
   onClear,
 }: FilterFieldsProps): ReactElement => {
   const { period } = useCompensationPeriod()
-  const experienceValue = filters.experience_years ?? 61
-  const salaryValue = filters.min_salary ?? 0
+  const experienceValue = filters.experience_years ?? ''
+  const salaryValue = filters.min_salary ?? ''
   const experienceOutput = filters.experience_years === null
     ? 'Any experience'
     : `I have ${filters.experience_years} ${filters.experience_years === 1 ? 'year' : 'years'}`
@@ -117,50 +117,58 @@ export const FilterFields = ({
       <FilterGroup title="Candidate experience" output={experienceOutput}>
         <input
           id={`${idPrefix}-experience`}
-          type="range"
+          type="number"
           min="0"
-          max="61"
+          max="60"
           step="1"
           value={experienceValue}
           aria-label="Candidate experience"
           aria-valuetext={experienceOutput}
           onChange={(event) => {
-            const value = Number(event.currentTarget.value)
+            const raw = event.currentTarget.value
+            const value = Number(raw)
+            if (!Number.isInteger(value) || value < 0 || value > 60) return
             onChange({
               ...filters,
-              experience_years: value === 61 ? null : value,
+              experience_years: raw === '' ? null : value,
             })
           }}
-          className="w-full accent-accent"
+          placeholder="Any"
+          className="min-h-10 w-full rounded-sm border border-strong bg-canvas px-3 text-sm text-primary"
         />
-        <div aria-hidden="true" className="mt-1.5 flex justify-between font-mono text-[10px] text-tertiary">
-          <span>0 years</span><span>Any</span>
+        <div className="mt-2 flex items-center justify-between gap-2 text-xs text-secondary">
+          <span>Years of experience</span>
+          <button type="button" onClick={() => onChange({ ...filters, experience_years: null })} className="min-h-8 px-2 text-accent-text underline underline-offset-4">Any experience</button>
         </div>
       </FilterGroup>
 
       <FilterGroup title="Minimum salary" output={salaryOutput}>
         <input
           id={`${idPrefix}-salary`}
-          type="range"
+          type="number"
           min="0"
           max="1000000"
-          step="5000"
+          step="1"
           value={salaryValue}
           aria-label="Minimum salary"
           aria-valuetext={salaryOutput}
           onChange={(event) => {
-            const value = Number(event.currentTarget.value)
+            const raw = event.currentTarget.value
+            const value = Number(raw)
+            if (!Number.isInteger(value) || value < 0 || value > 1_000_000) return
             onChange({
               ...filters,
-              min_salary: value === 0 ? null : value,
+              min_salary: raw === '' || value === 0 ? null : value,
               include_undisclosed_salary:
                 value === 0 ? false : filters.include_undisclosed_salary,
             })
           }}
-          className="w-full accent-accent"
+          placeholder="Any"
+          className="min-h-10 w-full rounded-sm border border-strong bg-canvas px-3 text-sm text-primary"
         />
-        <div aria-hidden="true" className="mt-1.5 flex justify-between font-mono text-[10px] text-tertiary">
-          <span>Any</span><span>$1m/yr</span>
+        <div className="mt-2 flex items-center justify-between gap-2 text-xs text-secondary">
+          <span>USD per year</span>
+          <button type="button" onClick={() => onChange({ ...filters, min_salary: null, include_undisclosed_salary: false })} className="min-h-8 px-2 text-accent-text underline underline-offset-4">Any salary</button>
         </div>
         {filters.min_salary !== null && (
           <label className="mt-3 flex min-h-9 cursor-pointer items-center gap-2 text-xs leading-snug text-secondary">
@@ -198,7 +206,7 @@ export const FilterFields = ({
         </div>
       </FilterGroup>
 
-      <FilterGroup title="Source adapter">
+      <FilterGroup title="Source">
         <div className="flex flex-col gap-1">
           {SOURCE_VALUES.map((source) => {
             const inputId = `${idPrefix}-source-${source}`

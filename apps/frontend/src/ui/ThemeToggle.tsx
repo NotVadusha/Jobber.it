@@ -11,7 +11,7 @@ export const ThemeToggle = (): ReactElement => {
   return (
     <button
       type="button"
-      className="grid size-9 place-items-center rounded-sm border border-transparent text-secondary transition-colors hover:border-strong hover:bg-surface-raised hover:text-primary"
+      className="grid size-9 place-items-center rounded-sm border border-strong bg-surface text-secondary transition-colors hover:border-strong hover:bg-surface-raised hover:text-primary"
       aria-label={`Switch to ${target} theme`}
       title={`Switch to ${target} theme`}
       onClick={toggleTheme}

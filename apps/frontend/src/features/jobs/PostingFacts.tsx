@@ -10,10 +10,6 @@ import { formatPostingDate } from '@/lib/format'
 
 type PostingSummary = KeysToCamelCase<components['schemas']['PostingSummary']>
 
-const Dot = (): ReactElement => {
-  return <span aria-hidden="true">·</span>
-}
-
 export const PostingFacts = ({
   posting,
   terms,
@@ -32,44 +28,23 @@ export const PostingFacts = ({
     : undefined
 
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-tertiary">
-      <span className="font-semibold text-secondary">
-        <HighlightedText text={posting.company} terms={terms} />
-      </span>
-      {posting.location && <><Dot /><span>{posting.location}</span></>}
-      {workplace && (
-        <>
-          <Dot />
-          <span className={`rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] ${
-            posting.remotePolicy === 'remote'
-              ? 'border-strong text-positive'
-              : posting.remotePolicy === 'hybrid'
-                ? 'border-accent bg-accent-soft text-accent'
-                : 'border-strong text-secondary'
-          }`}>
-            {workplace}
-          </span>
-        </>
-      )}
-      {seniority && <><Dot /><span>{seniority}</span></>}
-      <Dot />
-      <span>
-        {posting.yearsRequired === null || posting.yearsRequired === undefined
+    <div className="mt-3 space-y-2">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
+        <span className="font-medium text-primary"><HighlightedText text={posting.company} terms={terms} /></span>
+        {posting.location && <span className="text-secondary">{posting.location}</span>}
+      </div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-secondary">
+        <span className={compensation ? 'font-semibold text-primary' : undefined}>{compensation ?? 'Salary undisclosed'}</span>
+        {workplace && <span className="rounded-full bg-surface-raised px-2.5 py-1 text-xs text-secondary">{workplace}</span>}
+        {seniority && <span>{seniority}</span>}
+        <span>{posting.yearsRequired === null || posting.yearsRequired === undefined
           ? 'Experience not listed'
-          : `${posting.yearsRequired}+ ${posting.yearsRequired === 1 ? 'year' : 'years'}`}
-      </span>
-      <Dot />
-      <span className={compensation ? 'text-secondary' : undefined}>
-        {compensation ?? 'Salary undisclosed'}
-      </span>
-      <Dot />
-      <span>via {sourceLabel(posting.source)}</span>
-      {postingDate && (
-        <>
-          <Dot />
-          <time dateTime={postingDate.dateTime}>{postingDate.label}</time>
-        </>
-      )}
+          : `${posting.yearsRequired}+ ${posting.yearsRequired === 1 ? 'year' : 'years'}`}</span>
+      </div>
+      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-tertiary">
+        <span>via {sourceLabel(posting.source)}</span>
+        {postingDate && <time dateTime={postingDate.dateTime}>{postingDate.label}</time>}
+      </div>
     </div>
   )
 }

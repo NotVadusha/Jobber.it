@@ -4,7 +4,7 @@ import re
 from typing import Iterator
 
 from ..http import Fetcher
-from .base import RawPosting, _iso, boards, html_to_text
+from .base import RawPosting, _iso, boards, html_to_text, html_to_markdown
 
 
 def lever(fetch: Fetcher, companies: list[str], **_) -> Iterator[RawPosting]:
@@ -18,6 +18,12 @@ def lever(fetch: Fetcher, companies: list[str], **_) -> Iterator[RawPosting]:
                 for lst in job.get("lists") or []
             ]
             parts.append(job.get("additionalPlain") or "")
+            display_parts = [html_to_markdown(job.get("description")) or job.get("descriptionPlain") or ""]
+            display_parts += [
+                f"## {lst.get('text', '')}\n\n{html_to_markdown(lst.get('content'))}"
+                for lst in job.get("lists") or []
+            ]
+            display_parts.append(html_to_markdown(job.get("additional")) or job.get("additionalPlain") or "")
             yield RawPosting(
                 source="lever",
                 source_id=str(job["id"]),
@@ -28,6 +34,7 @@ def lever(fetch: Fetcher, companies: list[str], **_) -> Iterator[RawPosting]:
                 location_raw=cats.get("location"),
                 posted_at=_iso(job.get("createdAt")),
                 extra={
+                    "description_markdown": "\n\n".join(p for p in display_parts if p.strip()),
                     "board": slug,
                     "department": cats.get("department"),
                     "team": cats.get("team"),

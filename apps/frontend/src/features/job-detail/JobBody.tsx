@@ -7,6 +7,7 @@ import { PostingFacts } from '@/features/jobs/PostingFacts'
 import { PostingStack } from '@/features/jobs/PostingStack'
 import { sourceLabel } from '@/features/jobs/source-labels'
 import { SaveJobButton } from '@/features/saved/SaveJobButton'
+import { PRIMARY_ACTION } from '@/ui/action-styles'
 import { formatAbsoluteDate } from '@/lib/format'
 
 const NO_TERMS: readonly string[] = []
@@ -53,7 +54,7 @@ export const JobBody = ({
       </h1>
 
       <PostingFacts posting={posting} terms={NO_TERMS} />
-      <PostingStack stack={posting.stack ?? []} terms={NO_TERMS} />
+      <PostingStack stack={posting.stack ?? []} terms={NO_TERMS} expanded />
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
         {delisted || host === null ? (
@@ -65,9 +66,9 @@ export const JobBody = ({
             href={posting.url}
             target="_blank"
             rel="noopener noreferrer nofollow"
-            className="min-h-10 rounded-sm bg-accent px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-ink"
+            className={PRIMARY_ACTION}
           >
-            {`Open original posting on ${host}`}
+            Open original posting
             <span className="sr-only"> (opens in a new tab)</span>
           </a>
         )}
@@ -83,7 +84,7 @@ export const JobBody = ({
       </div>
 
       <p className="mt-4 text-xs leading-relaxed text-tertiary">
-        {`Aggregated from ${sourceLabel(posting.source)}. `}
+        {`Source: ${sourceLabel(posting.source)}${host ? ` (${host})` : ''}. `}
         {lastSeen ? (
           <>
             {'Last seen in the source on '}
@@ -93,11 +94,15 @@ export const JobBody = ({
         Jobber does not host this posting.
       </p>
 
-      <JobRankingContext postingId={posting.id} />
+      <JobSection
+        heading="Description"
+        text={posting.descriptionMarkdown || posting.description || null}
+        markdown={Boolean(posting.descriptionMarkdown)}
+      />
 
       <JobSection heading="Requirements" text={posting.requirements ?? null} />
       <JobSection heading="Responsibilities" text={posting.responsibilities ?? null} />
-      <JobSection heading="Description" text={posting.description ?? null} />
+      <JobRankingContext postingId={posting.id} />
     </article>
   )
 }

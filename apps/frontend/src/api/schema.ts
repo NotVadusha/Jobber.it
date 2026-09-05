@@ -272,6 +272,8 @@ export interface components {
             delisted_at?: string | null;
             /** Description */
             description?: string | null;
+            /** Description Markdown */
+            description_markdown?: string | null;
             /** First Seen At */
             first_seen_at?: string | null;
             /** Id */

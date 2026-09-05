@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react'
 
+import { SECONDARY_ACTION } from '@/ui/action-styles'
 import { ApiError } from '@/api/client'
 import { isPostingNotFound, usePostingDetailQuery } from '@/api/postings'
 import { Breadcrumb } from '@/features/job-detail/Breadcrumb'
@@ -10,9 +11,6 @@ import { navigate } from '@/routing/hash-router'
 import { defaultJobsState } from '@/routing/jobs-model'
 import { PageState } from '@/ui/PageState'
 import { Skeleton } from '@/ui/Skeleton'
-
-const ACTION_CLASS =
-  'min-h-10 rounded-sm border border-subtle px-4 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-secondary hover:border-strong hover:text-primary'
 
 const browseAllPostings = (): void => {
   navigate({ name: 'jobs', state: defaultJobsState() }, 'push')
@@ -49,11 +47,11 @@ export function JobPage({ postingId }: { postingId: string }): ReactElement {
           description="Jobber only holds postings its sources still publish. This one was never ingested, or its record has been cleared."
           action={
             <div className="flex flex-wrap justify-center gap-2">
-              <button type="button" onClick={browseAllPostings} className={ACTION_CLASS}>
+              <button type="button" onClick={browseAllPostings} className={SECONDARY_ACTION}>
                 Browse all postings
               </button>
               {isSaved(postingId) && (
-                <button type="button" onClick={() => remove(postingId)} className={ACTION_CLASS}>
+                <button type="button" onClick={() => remove(postingId)} className={SECONDARY_ACTION}>
                   Remove from saved
                 </button>
               )}
@@ -73,7 +71,7 @@ export function JobPage({ postingId }: { postingId: string }): ReactElement {
               : 'The posting could not be reached.'
           }
           action={
-            <button type="button" onClick={() => void refetch()} className={ACTION_CLASS}>
+            <button type="button" onClick={() => void refetch()} className={SECONDARY_ACTION}>
               Try again
             </button>
           }
@@ -87,7 +85,7 @@ export function JobPage({ postingId }: { postingId: string }): ReactElement {
             actions={
               <CopyLinkButton
                 route={{ name: 'job', postingId }}
-                className={ACTION_CLASS}
+                className={SECONDARY_ACTION}
               />
             }
           />

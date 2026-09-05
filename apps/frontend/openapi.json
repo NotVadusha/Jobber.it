@@ -498,6 +498,17 @@
             ],
             "title": "Description"
           },
+          "description_markdown": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description Markdown"
+          },
           "first_seen_at": {
             "anyOf": [
               {
