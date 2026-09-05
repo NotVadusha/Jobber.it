@@ -1,7 +1,9 @@
 import { expect, test } from '@playwright/test'
 import type { APIRequestContext } from '@playwright/test'
 
-const LIMITED_SEARCH = 'http://127.0.0.1:3101/api/search'
+import { RATE_LIMITED_ORIGIN } from './harness/servers'
+
+const LIMITED_SEARCH = `${RATE_LIMITED_ORIGIN}/api/search`
 const QUERY_BEACON = 'zzqueryleakbeacon'
 
 test.describe.configure({ mode: 'serial' })
