@@ -10,12 +10,8 @@ import {
 } from '@/features/catalogue/catalogue-state'
 import { WelcomeDashboard } from '@/features/catalogue/WelcomeDashboard'
 import { navigate } from '@/routing/hash-router'
-import {
-  normalizeJobsState,
-  type BrowseSort,
-  type JobsUrlFilters,
-  type JobsUrlState,
-} from '@/routing/jobs-url'
+import type { BrowseSort, JobsUrlFilters, JobsUrlState } from '@/routing/jobs-model'
+import { normalizeJobsState } from '@/routing/jobs-state'
 
 export type AllPostingsViewProps = {
   state: JobsUrlState

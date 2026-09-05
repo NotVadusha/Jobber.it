@@ -1,7 +1,7 @@
 import { useEffect, useRef, type ReactElement, type ReactNode } from 'react'
 
 import type { ProfileDocument } from '@/features/cv/read-profile'
-import type { JobsView } from '@/routing/jobs-url'
+import type { JobsView } from '@/routing/jobs-model'
 
 export const QUERY_MAX_LENGTH = 500
 

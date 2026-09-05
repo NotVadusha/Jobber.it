@@ -21,14 +21,9 @@ import { SearchForm } from '@/features/search/SearchForm'
 import { SearchResults } from '@/features/search/SearchResults'
 import { SearchTrace } from '@/features/search/SearchTrace'
 import { navigate } from '@/routing/hash-router'
-import {
-  encodeJobsState,
-  normalizeJobsState,
-  toApiFilters,
-  type JobsUrlFilters,
-  type JobsUrlState,
-  type JobsView,
-} from '@/routing/jobs-url'
+import type { JobsUrlFilters, JobsUrlState, JobsView } from '@/routing/jobs-model'
+import { normalizeJobsState, toApiFilters } from '@/routing/jobs-state'
+import { encodeJobsState } from '@/routing/jobs-url'
 import {
   currentEntryId,
   renewCurrentHistoryEntry,

@@ -8,14 +8,7 @@ import {
 
 import { formatCompensationFloor, useCompensationPeriod } from '@/features/jobs/compensation'
 import { sourceLabel, type PostingSource } from '@/features/jobs/source-labels'
-import {
-  POSTED_VALUES,
-  SENIORITY_VALUES,
-  SOURCE_VALUES,
-  WORKPLACE_VALUES,
-  type JobsUrlFilters,
-} from '@/routing/jobs-url'
-
+import { type JobsUrlFilters, POSTED_VALUES, SENIORITY_VALUES, SOURCE_VALUES, WORKPLACE_VALUES } from '@/routing/jobs-model'
 import './catalogue.css'
 
 type Workplace = JobsUrlFilters['remote_policy'][number]
