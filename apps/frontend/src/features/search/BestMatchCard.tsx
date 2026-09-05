@@ -2,7 +2,8 @@ import type { ReactElement } from 'react'
 
 import type { BestMatchData } from '@/api/search'
 import { HighlightedText } from '@/features/jobs/HighlightedText'
-import { PostingFacts, PostingStack } from '@/features/jobs/PostingFacts'
+import { PostingFacts } from '@/features/jobs/PostingFacts'
+import { PostingStack } from '@/features/jobs/PostingStack'
 import {
   evidenceTerms,
   hasEvidence,
