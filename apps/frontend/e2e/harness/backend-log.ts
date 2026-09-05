@@ -19,8 +19,10 @@ const tee = (stream: NodeJS.WriteStream): void => {
   }) as typeof stream.write
 }
 
-export default const globalSetup = (): void => {
+const globalSetup = (): void => {
   writeFileSync(BACKEND_LOG_PATH, '')
   tee(process.stdout)
   tee(process.stderr)
 }
+
+export default globalSetup
