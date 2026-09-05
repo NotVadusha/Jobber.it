@@ -180,7 +180,9 @@ test('a modified click opens a canonical job URL in a new context with no rankin
     modifiers: ['ControlOrMeta'],
   })
   const newTab = await opened
-  await newTab.waitForLoadState()
+  // waitForLoadState can resolve on the tab's about:blank, before the click's
+  // navigation starts; wait for the URL the click is being asserted on.
+  await newTab.waitForURL((url) => url.href.includes(jobHash(DETAIL_ID)))
 
   expect(newTab.url()).toContain(jobHash(DETAIL_ID))
   await expect(newTab.getByRole('heading', { level: 1 })).toHaveText('DetailBeacon Platform Engineer')
