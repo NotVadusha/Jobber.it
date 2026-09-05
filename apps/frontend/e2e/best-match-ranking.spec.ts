@@ -8,7 +8,7 @@ const QUERY_BEACON = 'zzqueryleakbeacon'
 
 test.describe.configure({ mode: 'serial' })
 
-function postSearch(request: APIRequestContext, url: string, data: unknown) {
+const postSearch = (request: APIRequestContext, url: string, data: unknown) => {
   return request.post(url, {
     data,
     headers: { 'content-type': 'application/json' },
