@@ -425,7 +425,7 @@ test('reduced motion disables nonessential transition and animation', async ({ p
   await page.goto('/')
 
   await attachAndRemoveProfile(page)
-  const toast = page.getByRole('status')
+  const toast = page.locator('#toast-viewport').getByRole('status')
   await expect(toast).toBeVisible()
   await expect(toast).toContainText('Profile removed')
 

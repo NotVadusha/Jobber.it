@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type DragEvent, type ReactElement } from 'react'
 
+import { SECONDARY_ACTION } from '@/ui/action-styles'
 import { useCorpusMetaQuery } from '@/api/search'
 import { useCvConsent } from '@/features/cv/cv-consent'
 import { CvDisclosureFacts } from '@/features/cv/CvDisclosureFacts'
@@ -10,9 +11,6 @@ import {
   readProfile,
   type ProfileDocument,
 } from '@/features/cv/read-profile'
-
-const CONTROL_CLASS =
-  'min-h-10 rounded-sm border border-subtle px-4 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-secondary hover:border-strong hover:text-primary'
 
 export const CvDropZone = ({
   profile,
@@ -30,6 +28,7 @@ export const CvDropZone = ({
   const dragDepth = useRef(0)
   const [dragging, setDragging] = useState(false)
   const [reading, setReading] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState(false)
   const statusId = useId()
 
   useEffect(() => {
@@ -71,6 +70,17 @@ export const CvDropZone = ({
     void accept(event.dataTransfer.files[0])
   }
 
+  if (!granted && !profile && !expanded) {
+    return (
+      <section aria-label="CV search" className="flex flex-wrap items-center gap-3">
+        <button type="button" className={SECONDARY_ACTION} onClick={() => setExpanded(true)}>
+          Add CV
+        </button>
+        <p className="text-sm text-secondary">Optional background for Best matches</p>
+      </section>
+    )
+  }
+
   if (!granted) {
     return (
       <section
@@ -87,13 +97,16 @@ export const CvDropZone = ({
           exactly what happens to it.
         </p>
         <CvDisclosureFacts provider={provider} />
+        <button type="button" className="mt-3 mr-3 text-sm text-secondary underline underline-offset-4" onClick={() => setExpanded(false)}>
+          Cancel
+        </button>
         <button
           type="button"
           onClick={() => {
             grant()
             inputRef.current?.click()
           }}
-          className={`mt-4 ${CONTROL_CLASS}`}
+          className={`mt-4 ${SECONDARY_ACTION}`}
         >
           I understand — choose a file
         </button>

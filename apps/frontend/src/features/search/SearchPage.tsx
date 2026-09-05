@@ -10,6 +10,9 @@ import { ApiError } from '@/api/client'
 import type { BestMatchRequest } from '@/api/search'
 import { useBestMatchStreamQuery } from '@/api/search-stream'
 import type { BestMatchSelection } from '@/api/search-stream'
+import { CatalogueFilters } from '@/features/catalogue/CatalogueFilters'
+import { activeCatalogueFilterCount } from '@/features/catalogue/catalogue-state'
+import { CompensationPeriodToggle } from '@/features/jobs/CompensationPeriodToggle'
 import { AllPostingsView } from '@/features/catalogue/AllPostingsView'
 import {
   CATALOGUE_DEBOUNCE_MS,
@@ -31,11 +34,9 @@ import {
   renewCurrentHistoryEntry,
 } from '@/routing/navigation-context'
 import { canShareJobsSearch } from '@/routing/permalink'
+import { SECONDARY_ACTION } from '@/ui/action-styles'
 import { PageState } from '@/ui/PageState'
 import { useToast } from '@/ui/toast'
-
-const ACTION_CLASS =
-  'min-h-10 rounded-sm border border-subtle px-4 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-secondary hover:border-strong hover:text-primary'
 
 type SearchDraft = {
   query: string
@@ -250,18 +251,23 @@ export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactEleme
 
   return (
     <section className="mx-auto w-full max-w-[var(--layout-content-max)] px-4 pb-20 sm:px-6">
-      <div className="pt-12 pb-2 sm:pt-16">
+      <div className="pt-8 pb-2 sm:pt-10">
         <h1 className="max-w-3xl font-mono text-2xl font-semibold leading-tight tracking-tight text-primary sm:text-4xl">
-          Ranked postings, <span className="text-accent">and why each one ranked.</span>
+          Find your next engineering role.
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-secondary">
-          Search the normalized corpus by exact text or semantic relevance. Hard constraints stay
-          structured and are never embedded.{' '}
+          Browse every live posting, or find roles that match your goals and experience.{' '}
           <a className="text-accent underline underline-offset-4" href="#/ranking">
             How ranking works
           </a>
         </p>
       </div>
+
+      <JobsViewSwitcher
+        view={visibleView}
+        bestEnabled={Boolean(draft.query.trim() || profile)}
+        onViewChange={changeView}
+      />
 
       <div className="mt-7">
         <SearchForm
@@ -289,44 +295,48 @@ export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactEleme
         />
       )}
 
-      <JobsViewSwitcher
-        view={visibleView}
-        bestEnabled={Boolean(draft.query.trim() || profile)}
-        onViewChange={changeView}
-      />
+      <div className="mt-8 grid items-start gap-6 lg:grid-cols-[16.5rem_minmax(0,1fr)] lg:gap-9">
+        <CatalogueFilters
+          filters={draft.filters}
+          activeCount={activeCatalogueFilterCount(draft.filters)}
+          onChange={(filters) => dispatch({ type: 'filters.changed', filters })}
+          onClear={clearFilters}
+        />
+        <div className="min-w-0">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <CompensationPeriodToggle />
+            {canShareJobsSearch({ query: urlState.query, hasProfile: profile !== null }) ? (
+              <CopyLinkButton
+                route={{ name: 'jobs', state: urlState }}
+                label="Copy search link"
+                className={SECONDARY_ACTION}
+              />
+            ) : (
+              <p className="max-w-prose text-xs leading-relaxed text-tertiary">
+                This search used only your CV. A link cannot carry CV data, so there is nothing to
+                share. Type a query to share the search.
+              </p>
+            )}
 
-      {canShareJobsSearch({ query: urlState.query, hasProfile: profile !== null }) ? (
-        <CopyLinkButton
-          route={{ name: 'jobs', state: urlState }}
-          label="Copy search link"
-          className={ACTION_CLASS}
-        />
-      ) : (
-        <p className="max-w-prose text-xs leading-relaxed text-tertiary">
-          This search used only your CV. A link cannot carry CV data, so there is nothing to
-          share. Type a query to share the search.
-        </p>
-      )}
-
-      {visibleView === 'all' ? (
-        <AllPostingsView
-          state={urlState}
-          draftQuery={draft.query}
-          draftFilters={draft.filters}
-          onDraftFiltersChange={(filters) =>
-            dispatch({ type: 'filters.changed', filters })
-          }
-          onClearFilters={clearFilters}
-          onClearQuery={clearQuery}
-        />
-      ) : (
-        <BestMatchView
-          selection={visibleView === 'best' ? selection : null}
-          pendingRequest={pendingRequest}
-          onRun={() => runBestMatch()}
-          onBrowseAllPostings={browseAllPostings}
-        />
-      )}
+          </div>
+          {visibleView === 'all' ? (
+            <AllPostingsView
+              state={urlState}
+              draftQuery={draft.query}
+              draftFilters={draft.filters}
+              onClearFilters={clearFilters}
+              onClearQuery={clearQuery}
+            />
+          ) : (
+            <BestMatchView
+              selection={visibleView === 'best' ? selection : null}
+              pendingRequest={pendingRequest}
+              onRun={() => runBestMatch()}
+              onBrowseAllPostings={browseAllPostings}
+            />
+          )}
+        </div>
+      </div>
     </section>
   )
 }

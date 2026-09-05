@@ -3,7 +3,7 @@ from __future__ import annotations
 import xml.etree.ElementTree as ET
 
 from ..http import Fetcher
-from .base import RawPosting, _iso, html_to_text
+from .base import RawPosting, _iso, html_to_text, html_to_markdown
 
 
 def jobico(fetch: Fetcher, feed_url: str = "https://jobico.io/api/feeds/jobs.xml", **_):
@@ -20,6 +20,7 @@ def jobico(fetch: Fetcher, feed_url: str = "https://jobico.io/api/feeds/jobs.xml
             location_raw=", ".join(x for x in (get("city"), get("country")) if x) or None,
             posted_at=_iso(get("date")),
             extra={
+                "description_markdown": html_to_markdown(get("description")),
                 "employment_type": get("employmenttype"),
                 "location_type": get("locationtype"),
                 "salary_text": get("salary") or None,

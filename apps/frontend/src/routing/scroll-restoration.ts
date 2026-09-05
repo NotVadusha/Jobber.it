@@ -1,20 +1,18 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 import { readJobberHistory } from '@/routing/history-state'
 
-const restoredEntries = new Set<string>()
-
 export const useJobsScrollRestoration = (ready: boolean): void => {
+  const restored = useRef(false)
   useEffect(() => {
-    if (!ready) return
+    if (!ready || restored.current) return
 
     const current = readJobberHistory()
     if (current.jobsScrollY === undefined) return
-    if (restoredEntries.has(current.entryId)) return
-    restoredEntries.add(current.entryId)
-
     const targetY = current.jobsScrollY
     const frame = requestAnimationFrame(() => {
+      // Mark only after the frame runs: StrictMode can cancel the first effect.
+      restored.current = true
       window.scrollTo({ top: targetY, behavior: 'auto' })
     })
     return () => cancelAnimationFrame(frame)

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, type ReactElement } from 'react'
 
 import { usePostgresSearchQuery } from '@/api/search'
-import { CatalogueFilters } from '@/features/catalogue/CatalogueFilters'
 import { CatalogueResults } from '@/features/catalogue/CatalogueResults'
 import {
   activeCatalogueFilterCount,
@@ -18,7 +17,6 @@ export type AllPostingsViewProps = {
   state: JobsUrlState
   draftQuery: string
   draftFilters: JobsUrlFilters
-  onDraftFiltersChange(filters: JobsUrlFilters): void
   onClearFilters(): void
   onClearQuery(): void
 }
@@ -27,7 +25,6 @@ export const AllPostingsView = ({
   state,
   draftQuery,
   draftFilters,
-  onDraftFiltersChange,
   onClearFilters,
   onClearQuery,
 }: AllPostingsViewProps): ReactElement => {
@@ -90,13 +87,6 @@ export const AllPostingsView = ({
   }
 
   return (
-    <div className="mt-10 grid items-start gap-6 lg:grid-cols-[16.5rem_minmax(0,1fr)] lg:gap-9">
-      <CatalogueFilters
-        filters={draftFilters}
-        activeCount={activeCount}
-        onChange={onDraftFiltersChange}
-        onClear={onClearFilters}
-      />
       <div ref={resultsRef} className="min-w-0 scroll-mt-[calc(var(--layout-header-height)+1rem)]">
         {shouldShowWelcome(welcomeState) && <WelcomeDashboard />}
         <CatalogueResults
@@ -115,6 +105,5 @@ export const AllPostingsView = ({
           onRetry={() => void refetch()}
         />
       </div>
-    </div>
   )
 }

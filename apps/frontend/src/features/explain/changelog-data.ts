@@ -15,7 +15,7 @@ export type Release = {
 
 export type ChangelogState = {
   releases: readonly Release[]
-  source: 'network' | 'cache'
+  source: 'network' | 'cache' | 'fallback'
   fetchedAt: string
 }
 
@@ -98,7 +98,7 @@ const loadChangelog = async (signal?: AbortSignal): Promise<ChangelogState> => {
   } catch (error) {
     const cached = readCache()
     if (!cached) throw error
-    return { releases: cached.releases, source: 'cache', fetchedAt: cached.fetchedAt }
+    return { releases: cached.releases, source: 'fallback', fetchedAt: cached.fetchedAt }
   }
 }
 

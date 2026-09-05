@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react'
 
+import { SECONDARY_ACTION } from '@/ui/action-styles'
 import { useChangelogQuery } from '@/features/explain/changelog-data'
 import { RELEASES_URL } from '@/features/explain/project'
 import { ReleaseEntry } from '@/features/explain/ReleaseEntry'
@@ -9,13 +10,10 @@ import { Prose } from '@/ui/Prose'
 import { ProseSection } from '@/ui/ProseSection'
 import { Skeleton } from '@/ui/Skeleton'
 
-const ACTION_CLASS =
-  'min-h-10 rounded-sm border border-subtle px-4 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-secondary hover:border-strong hover:text-primary'
-
 export function ChangelogPage(): ReactElement {
   const { data, isPending, isError, refetch } = useChangelogQuery()
   const state = data ?? null
-  const staleAt = state?.source === 'cache' ? formatAbsoluteDate(state.fetchedAt) : null
+  const staleAt = state?.source === 'fallback' ? formatAbsoluteDate(state.fetchedAt) : null
 
   return (
     <Prose
@@ -38,10 +36,10 @@ export function ChangelogPage(): ReactElement {
             compact
             action={
               <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={() => void refetch()} className={ACTION_CLASS}>
+                <button type="button" onClick={() => void refetch()} className={SECONDARY_ACTION}>
                   Try again
                 </button>
-                <a href={RELEASES_URL} target="_blank" rel="noopener noreferrer" className={ACTION_CLASS}>
+                <a href={RELEASES_URL} target="_blank" rel="noopener noreferrer" className={SECONDARY_ACTION}>
                   Open releases on GitHub
                   <span className="sr-only"> (opens in a new tab)</span>
                 </a>
@@ -72,7 +70,7 @@ export function ChangelogPage(): ReactElement {
             description="The first entry appears when Release 1 ships. Until then there is nothing to list."
             compact
             action={
-              <a href={RELEASES_URL} target="_blank" rel="noopener noreferrer" className={ACTION_CLASS}>
+              <a href={RELEASES_URL} target="_blank" rel="noopener noreferrer" className={SECONDARY_ACTION}>
                 Open releases on GitHub
                 <span className="sr-only"> (opens in a new tab)</span>
               </a>

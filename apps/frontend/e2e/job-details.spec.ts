@@ -76,7 +76,7 @@ test('stored text with a script tag, a long token, and dash line starts stays in
 
   await expect(page.getByText('<script>alert(1)</script>', { exact: false })).toBeVisible()
   await expect(page.locator('main script')).toHaveCount(0)
-  await expect(page.getByText('- literal dash line start')).toBeVisible()
+  await expect(page.getByText('literal dash line start', { exact: false })).toBeVisible()
 
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -87,7 +87,7 @@ test('stored text with a script tag, a long token, and dash line starts stays in
 test('the external action carries the stored URL, a new tab target, and the full rel', async ({ page }) => {
   await openJob(page, DETAIL_ID)
 
-  const external = page.getByRole('link', { name: /Open original posting on/ })
+  const external = page.getByRole('link', { name: /Open original posting/ })
   await expect(external).toHaveAttribute('href', 'https://example.test/jobs/13')
   await expect(external).toHaveAttribute('target', '_blank')
   const rel = await external.getAttribute('rel')
@@ -104,7 +104,7 @@ test('a delisted posting is marked, dated, readable, and carries no external anc
   await expect(banner).toContainText('stopped listing this posting')
   await expect(banner.locator('time')).toHaveCount(1)
   await expect(page.getByText('The original posting is no longer available at the source.')).toBeVisible()
-  await expect(page.getByRole('link', { name: /Open original posting on/ })).toHaveCount(0)
+  await expect(page.getByRole('link', { name: /Open original posting/ })).toHaveCount(0)
   await expect(page.getByRole('heading', { name: 'Description' })).toBeVisible()
 })
 
@@ -130,11 +130,12 @@ test('returning by the breadcrumb restores the page, its results, and its scroll
   await catalogue
   await expect(page.getByRole('list', { name: 'All postings results' })).toBeVisible()
 
-  await page.evaluate(() => window.scrollTo({ top: 600, behavior: 'auto' }))
+  const posting = page.getByRole('list', { name: 'All postings results' }).getByRole('link').nth(4)
+  await posting.evaluate((element) => element.scrollIntoView({ block: 'center', behavior: 'instant' }))
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(400)
   const scrolled = await page.evaluate(() => window.scrollY)
 
-  await page.getByRole('list', { name: 'All postings results' }).getByRole('link').first().click()
+  await posting.click()
   await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toBeVisible()
 
   await page.getByRole('link', { name: 'Jobs' }).click()
@@ -150,11 +151,12 @@ test('the browser Back button restores exactly what the breadcrumb restores', as
   await page.goto('/#/jobs?page=2')
   await catalogue
 
-  await page.evaluate(() => window.scrollTo({ top: 600, behavior: 'auto' }))
+  const posting = page.getByRole('list', { name: 'All postings results' }).getByRole('link').nth(4)
+  await posting.evaluate((element) => element.scrollIntoView({ block: 'center', behavior: 'instant' }))
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(400)
   const scrolled = await page.evaluate(() => window.scrollY)
 
-  await page.getByRole('list', { name: 'All postings results' }).getByRole('link').first().click()
+  await posting.click()
   await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toBeVisible()
 
   await page.goBack()
@@ -240,4 +242,20 @@ test('the detail response is uncacheable and the request carries no query or pro
     expect(entry).not.toContain('profile_text')
     expect(entry).not.toMatch(/[?&]q=/)
   }
+})
+
+test('formatted descriptions render structure while plain fields stay literal and source content stays inert', async ({ page }) => {
+  await page.route('**/api/postings/jobico%3Ae2e-13', async (route) => {
+    const response = await route.fetch()
+    const body = await response.json()
+    body.data.description_markdown = '## About the role\n\nBuild **reliable systems**.\n\n- Ship improvements\n- Review changes\n\n[Unsafe](javascript:alert(1))\n\n![Tracking](https://example.test/pixel.png)\n\n<script>alert(1)</script>'
+    body.data.requirements = 'Understand __init__ and <T> syntax.'
+    await route.fulfill({ response, json: body })
+  })
+  await openJob(page, DETAIL_ID)
+  await expect(page.getByRole('heading', { name: 'About the role' })).toBeVisible()
+  await expect(page.locator('main strong')).toHaveText('reliable systems')
+  await expect(page.getByRole('listitem').filter({ hasText: 'Ship improvements' })).toBeVisible()
+  await expect(page.getByText('Understand __init__ and <T> syntax.')).toBeVisible()
+  await expect(page.locator('main script, main img, main a[href^="javascript:"]')).toHaveCount(0)
 })

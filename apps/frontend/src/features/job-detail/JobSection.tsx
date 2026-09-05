@@ -1,15 +1,24 @@
 import type { ReactElement } from 'react'
+import { Markdown } from '@/ui/Markdown'
 
-export const JobSection = ({ heading, text }: { heading: string; text: string | null }): ReactElement | null => {
+export const JobSection = ({ heading, text, markdown = false }: {
+  heading: string
+  text: string | null
+  markdown?: boolean
+}): ReactElement | null => {
   if (!text) return null
   return (
-    <section className="mt-8">
-      <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-secondary">
+    <section className="mt-10 border-t border-subtle pt-6">
+      <h2 className="mb-5 text-xl font-semibold tracking-tight text-primary">
         {heading}
       </h2>
-      <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-secondary [overflow-wrap:anywhere]">
-        {text}
-      </p>
+      {markdown ? <Markdown text={text} /> : (
+        <div className="markdown-body">
+          {text.split(/\n\s*\n/).map((paragraph, index) => (
+            <p key={index} className="whitespace-pre-line">{paragraph}</p>
+          ))}
+        </div>
+      )}
     </section>
   )
 }

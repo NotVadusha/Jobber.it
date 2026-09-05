@@ -53,7 +53,7 @@ export function RankingPage(): ReactElement {
         <ol className="flex flex-col gap-4">
           {STAGE_ORDER.map((stage, index) => (
             <li key={stage} className="flex gap-3">
-              <span className="pt-0.5 font-mono text-xs tabular-nums text-tertiary">
+              <span className="w-7 shrink-0 whitespace-nowrap pt-0.5 font-mono text-xs tabular-nums text-secondary">
                 {String(index + 1).padStart(2, '0')}
               </span>
               <div className="min-w-0">

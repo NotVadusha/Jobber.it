@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 
 from selectolax.parser import HTMLParser
+from markdownify import markdownify
 
 from ..logging import get_logger
 
@@ -96,6 +97,15 @@ def html_to_text(raw: str | None) -> str:
     node = tree.body or tree.root
     text = node.text(separator="\n", strip=True) if node else ""
     return re.sub(r"\n{3,}", "\n\n", text).strip()
+
+
+def html_to_markdown(raw: str | None) -> str:
+    """Keep source structure for display without changing the searchable text."""
+    if not raw:
+        return ""
+    tree = HTMLParser(raw)
+    tree.strip_tags(["script", "style", "noscript", "img", "iframe", "object"])
+    return markdownify(tree.html, heading_style="ATX", bullets="-").strip()
 
 
 def _iso(value) -> str | None:

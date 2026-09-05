@@ -85,7 +85,7 @@ flags, experience). Trust those over your reading of the prose when they conflic
 
 
 def user_content(posting: dict) -> str:
-    hints = {k: v for k, v in (posting.get("extra") or {}).items() if v not in (None, "", [])}
+    hints = {k: v for k, v in (posting.get("extra") or {}).items() if k != "description_markdown" and v not in (None, "", [])}
     parts = [
         f"Title: {posting['title']}",
         f"Company: {posting['company']}",
