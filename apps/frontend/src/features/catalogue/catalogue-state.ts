@@ -49,7 +49,7 @@ export const buildCatalogueDraftState = ({
   applied: JobsUrlState
   query: string
   filters: JobsUrlFilters
-}): JobsUrlState {
+}): JobsUrlState => {
   const draft = normalizeJobsState({
     ...applied,
     view: 'all',
