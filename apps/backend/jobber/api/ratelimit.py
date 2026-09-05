@@ -18,6 +18,8 @@ def client_address(
     hops: int,
 ) -> tuple[str | None, int]:
     entries = [part.strip() for part in (forwarded or "").split(",") if part.strip()]
+    # Counted from the right, so a client cannot claim another address by
+    # prepending entries to the header our own proxies appended to.
     if hops >= 1 and len(entries) >= hops:
         return entries[-hops], len(entries)
     return peer, len(entries)
@@ -37,6 +39,8 @@ def check(
     window_seconds: int,
     max_requests: int,
 ) -> int | None:
+    # Fixed window, not sliding: it opens on a key's first request and every
+    # later one shares it. Returns Retry-After seconds when refused, else None.
     if max_requests <= 0 or window_seconds <= 0:
         return None
 

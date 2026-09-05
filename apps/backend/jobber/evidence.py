@@ -29,6 +29,8 @@ def contains_term(text: str, term: str) -> bool:
         before = lowered[start - 1] if start else ""
         after_index = start + len(needle)
         after = lowered[after_index] if after_index < len(lowered) else ""
+        # Word boundary by non-alphanumeric neighbours, so "C++" and ".NET"
+        # match while "java" does not report a hit inside "javascript".
         if not before.isalnum() and not after.isalnum():
             return True
         start = lowered.find(needle, start + 1)
