@@ -15,11 +15,11 @@ export type RouteName = Route['name']
 const MAX_POSTING_ID_LENGTH = 512
 const POSTING_SOURCES = new Set<string>(SOURCE_VALUES)
 
-export function defaultJobsRoute(): Route {
+export const defaultJobsRoute = (): Route => {
   return { name: 'jobs', state: defaultJobsState() }
 }
 
-function decodePostingId(segment: string): string | null {
+const decodePostingId = (segment: string): string | null => {
   let decoded: string
   try {
     decoded = decodeURIComponent(segment)
@@ -41,7 +41,7 @@ function decodePostingId(segment: string): string | null {
   return POSTING_SOURCES.has(source) ? decoded : null
 }
 
-export function parseHash(hash: string): Route {
+export const parseHash = (hash: string): Route => {
   const raw = hash.startsWith('#') ? hash.slice(1) : hash
   const separator = raw.indexOf('?')
   const path = separator === -1 ? raw : raw.slice(0, separator)
@@ -61,15 +61,15 @@ export function parseHash(hash: string): Route {
   return staticName ? { name: staticName } : defaultJobsRoute()
 }
 
-export function formatRoute(route: Route): string {
+export const formatRoute = (route: Route): string => {
   if (route.name === 'jobs') return encodeJobsState(route.state)
   if (route.name === 'job') return `#/job/${encodeURIComponent(route.postingId)}`
   return `#/${route.name}`
 }
 
-export function resolveActiveRoute(
+export const resolveActiveRoute = (
   route: Route,
   active: ReadonlySet<RouteName>,
-): Route {
+): Route => {
   return active.has(route.name) ? route : defaultJobsRoute()
 }

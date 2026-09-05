@@ -10,11 +10,11 @@ export type ErrorResponse = KeysToCamelCase<WireErrorResponse>
 
 type UnknownRecord = Record<string, unknown>
 
-function isRecord(value: unknown): value is UnknownRecord {
+const isRecord = (value: unknown): value is UnknownRecord => {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function isErrorResponse(value: unknown): value is ErrorResponse {
+const isErrorResponse = (value: unknown): value is ErrorResponse => {
   if (!isRecord(value) || !isRecord(value.error) || !isRecord(value.meta)) {
     return false
   }

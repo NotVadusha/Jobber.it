@@ -11,11 +11,11 @@ export type SearchResultsProps = {
   busy: boolean
 }
 
-function Result({ result, rank, tokens }: {
+const Result = ({ result, rank, tokens }: {
   result: BestMatchPosting
   rank: number
   tokens: string[]
-}) {
+}) => {
   const { period } = useCompensationPeriod()
   const place = result.location
   const policy = result.remotePolicy !== 'unknown' && result.remotePolicy
@@ -90,7 +90,7 @@ function Result({ result, rank, tokens }: {
   )
 }
 
-export function SearchResults({ data, busy }: SearchResultsProps) {
+export const SearchResults = ({ data, busy }: SearchResultsProps) => {
   if (!data) return null
 
   const tokens = data.terms.flatMap(splitTerms)

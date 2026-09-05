@@ -25,11 +25,11 @@ export type RouteSnapshot = {
   rawHash: string
 }
 
-function currentHash(): string {
+const currentHash = (): string => {
   return window.location.hash
 }
 
-function subscribe(onStoreChange: () => void): () => void {
+const subscribe = (onStoreChange: () => void): () => void => {
   window.addEventListener('hashchange', onStoreChange)
   window.addEventListener('popstate', onStoreChange)
   window.addEventListener(ROUTE_EVENT, onStoreChange)
@@ -40,13 +40,13 @@ function subscribe(onStoreChange: () => void): () => void {
   }
 }
 
-export function navigate(route: Route, mode: NavigationMode = 'push'): void {
+export const navigate = (route: Route, mode: NavigationMode = 'push'): void => {
   const hash = formatRoute(route)
   if (mode === 'push' && hash === currentHash()) return
   commitCanonicalHash(hash, { mode })
 }
 
-export function navigateFromJobsToJob(postingId: string): void {
+export const navigateFromJobsToJob = (postingId: string): void => {
   const canonicalJobsHash = formatRoute(parseHash(currentHash()))
   commitCanonicalHash(canonicalJobsHash, { mode: 'replace' })
   rememberCurrentJobsScroll(window.scrollY)
@@ -56,7 +56,7 @@ export function navigateFromJobsToJob(postingId: string): void {
   })
 }
 
-export function returnToJobs(): void {
+export const returnToJobs = (): void => {
   if (currentReturnContext()) {
     window.history.back()
     return
@@ -64,7 +64,7 @@ export function returnToJobs(): void {
   navigate(defaultJobsRoute(), 'push')
 }
 
-export function useHashRoute(active: ReadonlySet<RouteName>): RouteSnapshot {
+export const useHashRoute = (active: ReadonlySet<RouteName>): RouteSnapshot => {
   const rawHash = useSyncExternalStore(subscribe, currentHash, () => '#/jobs')
 
   const snapshot = useMemo<RouteSnapshot>(() => {

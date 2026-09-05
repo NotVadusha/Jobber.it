@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 
 const THEME_KEY = 'jobber.theme.v1'
 
-async function readThemeState(page: { evaluate: <T>(fn: () => T) => Promise<T> }) {
+const readThemeState = async (page: { evaluate: <T>(fn: () => T) => Promise<T> }) => {
   return page.evaluate(() => ({
     theme: document.documentElement.dataset.theme,
     source: document.documentElement.dataset.themeSource,
@@ -128,7 +128,7 @@ const THEME_VARS = [
   '--theme-shadow',
 ] as const
 
-async function readThemeVars(page: Page): Promise<Record<string, string>> {
+const readThemeVars = async (page: Page): Promise<Record<string, string>> => {
   return page.evaluate((vars) => {
     const style = getComputedStyle(document.documentElement)
     const out: Record<string, string> = {}
@@ -137,12 +137,12 @@ async function readThemeVars(page: Page): Promise<Record<string, string>> {
   }, THEME_VARS as unknown as string[])
 }
 
-function srgbToLinear(channel: number): number {
+const srgbToLinear = (channel: number): number => {
   const c = channel / 255
   return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
 }
 
-function relativeLuminance(hex: string): number {
+const relativeLuminance = (hex: string): number => {
   const clean = hex.replace('#', '')
   const r = parseInt(clean.slice(0, 2), 16)
   const g = parseInt(clean.slice(2, 4), 16)
@@ -150,7 +150,7 @@ function relativeLuminance(hex: string): number {
   return 0.2126 * srgbToLinear(r) + 0.7152 * srgbToLinear(g) + 0.0722 * srgbToLinear(b)
 }
 
-function contrastRatio(hexA: string, hexB: string): number {
+const contrastRatio = (hexA: string, hexB: string): number => {
   const l1 = relativeLuminance(hexA)
   const l2 = relativeLuminance(hexB)
   const lighter = Math.max(l1, l2)
@@ -320,7 +320,7 @@ test('empty navigation and footer groups render no dead chrome', async ({ page }
 // new ToastProvider. The theme suite above already re-verifies toggling
 // end-to-end against '/', so it doubles as the regression check for that move.
 
-async function attachAndRemoveProfile(page: Page): Promise<void> {
+const attachAndRemoveProfile = async (page: Page): Promise<void> => {
   await page.getByLabel(/Attach a CV/).setInputFiles({
     name: 'profile.txt',
     mimeType: 'text/plain',
@@ -389,7 +389,7 @@ test('page states and skeletons expose the expected accessibility tree', async (
   await expect(skeletonStatus).toHaveClass(/sr-only/)
 })
 
-function parseCssDurationMs(value: string): number {
+const parseCssDurationMs = (value: string): number => {
   const trimmed = value.trim()
   if (trimmed.endsWith('ms')) return parseFloat(trimmed)
   if (trimmed.endsWith('s')) return parseFloat(trimmed) * 1000

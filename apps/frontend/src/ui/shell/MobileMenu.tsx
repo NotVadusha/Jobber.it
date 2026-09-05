@@ -2,13 +2,13 @@ import type { ReactElement } from 'react'
 
 import type { ShellNavItem } from '@/ui/shell/types'
 
-export function MobileMenu({
+export const MobileMenu = ({
   items,
   onSelect,
 }: {
   items: readonly ShellNavItem[]
   onSelect: () => void
-}): ReactElement {
+}): ReactElement => {
   return (
     <div
       id="shell-mobile-menu"

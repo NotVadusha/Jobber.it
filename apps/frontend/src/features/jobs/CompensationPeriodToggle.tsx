@@ -2,7 +2,7 @@ import type { ReactElement } from 'react'
 
 import { useCompensationPeriod } from '@/features/jobs/compensation'
 
-export function CompensationPeriodToggle(): ReactElement {
+export const CompensationPeriodToggle = (): ReactElement => {
   const { period, setPeriod } = useCompensationPeriod()
 
   return (

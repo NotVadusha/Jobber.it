@@ -14,7 +14,7 @@ export type CommitHashOptions = {
   fromJobs?: { hash: string; scrollY: number }
 }
 
-export function ensureCurrentHistoryEntry(): JobberHistoryState {
+export const ensureCurrentHistoryEntry = (): JobberHistoryState => {
   const raw = window.history.state
   if (hasValidEnvelope(raw)) return readJobberHistory(raw)
 
@@ -23,10 +23,10 @@ export function ensureCurrentHistoryEntry(): JobberHistoryState {
   return fresh
 }
 
-export function commitCanonicalHash(
+export const commitCanonicalHash = (
   hash: string,
   { mode, fromJobs: requestedFromJobs }: CommitHashOptions,
-): void {
+): void => {
   const current = readJobberHistory()
   const entryId = mode === 'replace' ? current.entryId : createEntryId()
   const jobber: JobberHistoryState = { version: 1, entryId }
@@ -50,7 +50,7 @@ export function commitCanonicalHash(
   window.dispatchEvent(new Event(ROUTE_EVENT))
 }
 
-export function renewCurrentHistoryEntry(): JobberHistoryState {
+export const renewCurrentHistoryEntry = (): JobberHistoryState => {
   const current = ensureCurrentHistoryEntry()
   const jobber: JobberHistoryState = {
     ...current,
@@ -62,7 +62,7 @@ export function renewCurrentHistoryEntry(): JobberHistoryState {
   return jobber
 }
 
-export function rememberCurrentJobsScroll(scrollY: number = window.scrollY): JobberHistoryState {
+export const rememberCurrentJobsScroll = (scrollY: number = window.scrollY): JobberHistoryState => {
   const current = ensureCurrentHistoryEntry()
   const jobber: JobberHistoryState = { ...current, jobsScrollY: normalizeScrollY(scrollY) }
   window.history.replaceState(mergeJobberHistory(jobber), '', window.location.href)
@@ -70,10 +70,10 @@ export function rememberCurrentJobsScroll(scrollY: number = window.scrollY): Job
   return jobber
 }
 
-export function currentEntryId(): string {
+export const currentEntryId = (): string => {
   return ensureCurrentHistoryEntry().entryId
 }
 
-export function currentReturnContext(): JobberHistoryState['fromJobs'] | null {
+export const currentReturnContext = (): JobberHistoryState['fromJobs'] | null => {
   return readJobberHistory().fromJobs ?? null
 }

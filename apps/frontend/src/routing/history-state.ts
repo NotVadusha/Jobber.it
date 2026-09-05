@@ -18,7 +18,7 @@ type HistoryEnvelope = {
 
 let entryCounter = 0
 
-export function createEntryId(): string {
+export const createEntryId = (): string => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID()
   }
@@ -26,19 +26,19 @@ export function createEntryId(): string {
   return `entry-${Date.now()}-${entryCounter}`
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null
 }
 
-function isValidScrollY(value: unknown): value is number {
+const isValidScrollY = (value: unknown): value is number => {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
 }
 
-export function normalizeScrollY(value: unknown): number {
+export const normalizeScrollY = (value: unknown): number => {
   return isValidScrollY(value) ? value : 0
 }
 
-function isValidFromJobs(value: unknown): value is NonNullable<JobberHistoryState['fromJobs']> {
+const isValidFromJobs = (value: unknown): value is NonNullable<JobberHistoryState['fromJobs']> => {
   return (
     isRecord(value) &&
     typeof value.hash === 'string' &&
@@ -47,7 +47,7 @@ function isValidFromJobs(value: unknown): value is NonNullable<JobberHistoryStat
   )
 }
 
-export function hasValidEnvelope(raw: unknown): raw is HistoryEnvelope {
+export const hasValidEnvelope = (raw: unknown): raw is HistoryEnvelope => {
   const jobber = isRecord(raw) ? raw.jobber : undefined
   return (
     isRecord(jobber) &&
@@ -57,12 +57,12 @@ export function hasValidEnvelope(raw: unknown): raw is HistoryEnvelope {
   )
 }
 
-export function mergeJobberHistory(jobber: JobberHistoryState): BrowserHistoryState {
+export const mergeJobberHistory = (jobber: JobberHistoryState): BrowserHistoryState => {
   const current = isRecord(window.history.state) ? window.history.state : {}
   return { ...current, jobber }
 }
 
-export function readJobberHistory(value: unknown = window.history.state): JobberHistoryState {
+export const readJobberHistory = (value: unknown = window.history.state): JobberHistoryState => {
   if (!hasValidEnvelope(value)) {
     return { version: 1, entryId: createEntryId() }
   }

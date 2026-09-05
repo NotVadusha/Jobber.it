@@ -6,7 +6,7 @@ type HighlightSegment = {
   highlighted: boolean
 }
 
-export function literalQueryTerms(query: string): string[] {
+export const literalQueryTerms = (query: string): string[] => {
   const seen = new Set<string>()
   return query
     .trim()
@@ -20,7 +20,7 @@ export function literalQueryTerms(query: string): string[] {
     .sort((left, right) => right.length - left.length)
 }
 
-function highlightSegments(text: string, terms: readonly string[]): HighlightSegment[] {
+const highlightSegments = (text: string, terms: readonly string[]): HighlightSegment[] => {
   if (!text || terms.length === 0) {
     return [{ start: 0, text, highlighted: false }]
   }
@@ -68,13 +68,13 @@ function highlightSegments(text: string, terms: readonly string[]): HighlightSeg
   return segments
 }
 
-export function HighlightedText({
+export const HighlightedText = ({
   text,
   terms,
 }: {
   text: string
   terms: readonly string[]
-}): ReactElement {
+}): ReactElement => {
   return (
     <>
       {highlightSegments(text, terms).map((segment) => (

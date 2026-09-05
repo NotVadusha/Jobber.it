@@ -2,7 +2,7 @@ import type { ReactElement } from 'react'
 
 import type { FooterGroup } from '@/ui/shell/types'
 
-export function SiteFooter({ groups }: { groups: readonly FooterGroup[] }): ReactElement {
+export const SiteFooter = ({ groups }: { groups: readonly FooterGroup[] }): ReactElement => {
   const nonEmptyGroups = groups.filter((group) => group.links.length > 0)
   const year = new Date().getFullYear()
 

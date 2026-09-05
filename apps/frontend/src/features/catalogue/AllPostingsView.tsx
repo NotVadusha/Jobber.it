@@ -22,14 +22,14 @@ export type AllPostingsViewProps = {
   onClearQuery(): void
 }
 
-export function AllPostingsView({
+export const AllPostingsView = ({
   state,
   draftQuery,
   draftFilters,
   onDraftFiltersChange,
   onClearFilters,
   onClearQuery,
-}: AllPostingsViewProps): ReactElement {
+}: AllPostingsViewProps): ReactElement => {
   const resultsRef = useRef<HTMLDivElement>(null)
   const request = useMemo(() => buildPostgresSearchRequest(state), [state])
   const {

@@ -4,7 +4,7 @@ export type PaginationItem =
   | { kind: 'page'; page: number }
   | { kind: 'ellipsis'; key: 'left' | 'right' }
 
-function pageItems(currentPage: number, totalPages: number): PaginationItem[] {
+const pageItems = (currentPage: number, totalPages: number): PaginationItem[] => {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, index) => ({
       kind: 'page' as const,
@@ -39,6 +39,6 @@ function pageItems(currentPage: number, totalPages: number): PaginationItem[] {
   ]
 }
 
-export function usePaginationItems(currentPage: number, totalPages: number): PaginationItem[] {
+export const usePaginationItems = (currentPage: number, totalPages: number): PaginationItem[] => {
   return useMemo(() => pageItems(currentPage, totalPages), [currentPage, totalPages])
 }

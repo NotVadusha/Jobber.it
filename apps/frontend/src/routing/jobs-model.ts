@@ -60,7 +60,7 @@ export const DEFAULT_JOBS_FILTERS: JobsUrlFilters = {
   posted_within: null,
 }
 
-export function defaultJobsState(): JobsUrlState {
+export const defaultJobsState = (): JobsUrlState => {
   return {
     view: 'all',
     query: '',

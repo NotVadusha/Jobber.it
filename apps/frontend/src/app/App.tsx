@@ -9,9 +9,9 @@ import { AppShell } from '@/ui/shell/AppShell'
 
 export default function App(): ReactElement {
   const { route } = useHashRoute(ACTIVE_ROUTE_NAMES)
-  const metaQuery = useCorpusMetaQuery()
-  const corpusSummary = metaQuery.data
-    ? `${metaQuery.data.data.corpusSize.toLocaleString()} live postings`
+  const { data: meta } = useCorpusMetaQuery()
+  const corpusSummary = meta
+    ? `${meta.data.corpusSize.toLocaleString()} live postings`
     : undefined
 
   return (

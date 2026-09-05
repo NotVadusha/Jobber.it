@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-async function waitForCatalogue(page: Page): Promise<void> {
+const waitForCatalogue = async (page: Page): Promise<void> => {
   await page.waitForResponse((response) =>
     response.url().endsWith('/api/postings/query') &&
     response.request().method() === 'POST' &&
@@ -9,28 +9,28 @@ async function waitForCatalogue(page: Page): Promise<void> {
   )
 }
 
-async function openJobs(page: Page, hash = '#/jobs'): Promise<void> {
+const openJobs = async (page: Page, hash = '#/jobs'): Promise<void> => {
   const catalogue = waitForCatalogue(page)
   await page.goto(`/${hash}`)
   await catalogue
   await expect(page.getByRole('list', { name: 'All postings results' })).toBeVisible()
 }
 
-async function changeAndWait(page: Page, action: () => Promise<void>): Promise<void> {
+const changeAndWait = async (page: Page, action: () => Promise<void>): Promise<void> => {
   const catalogue = waitForCatalogue(page)
   await action()
   await catalogue
 }
 
-function welcome(page: Page) {
+const welcome = (page: Page) => {
   return page.getByRole('region', { name: 'Welcome to Jobber' })
 }
 
-function activeFilters(page: Page) {
+const activeFilters = (page: Page) => {
   return page.getByRole('complementary', { name: 'Posting filters' })
 }
 
-function postingItems(page: Page) {
+const postingItems = (page: Page) => {
   return page.getByRole('list', { name: 'All postings results' }).locator(':scope > li')
 }
 

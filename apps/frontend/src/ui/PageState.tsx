@@ -16,7 +16,7 @@ const ROLE_BY_KIND: Record<PageStateKind, 'status' | 'alert' | 'region'> = {
   empty: 'region',
 }
 
-export function PageState({ kind, title, description, action, compact }: PageStateProps): ReactElement {
+export const PageState = ({ kind, title, description, action, compact }: PageStateProps): ReactElement => {
   return (
     <div
       role={ROLE_BY_KIND[kind]}

@@ -4,7 +4,7 @@ import { MoonIcon } from '@/ui/icons/MoonIcon'
 import { SunIcon } from '@/ui/icons/SunIcon'
 import { useTheme } from '@/ui/theme'
 
-export function ThemeToggle(): ReactElement {
+export const ThemeToggle = (): ReactElement => {
   const { theme, toggleTheme } = useTheme()
   const target = theme === 'dark' ? 'light' : 'dark'
 

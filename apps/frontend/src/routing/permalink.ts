@@ -5,16 +5,16 @@ export type CopyPermalinkResult = {
   copied: boolean
 }
 
-export function absoluteRouteUrl(route: Route, current: Location): string {
+export const absoluteRouteUrl = (route: Route, current: Location): string => {
   const url = new URL(current.href)
   url.hash = formatRoute(route).slice(1)
   return url.toString()
 }
 
-export async function copyRoutePermalink(
+export const copyRoutePermalink = async (
   route: Route,
   clipboard = window.navigator.clipboard,
-): Promise<CopyPermalinkResult> {
+): Promise<CopyPermalinkResult> => {
   const url = absoluteRouteUrl(route, window.location)
   if (!clipboard?.writeText) return { url, copied: false }
   try {
@@ -25,9 +25,9 @@ export async function copyRoutePermalink(
   }
 }
 
-export function canShareJobsSearch({ query, hasProfile }: {
+export const canShareJobsSearch = ({ query, hasProfile }: {
   query: string
   hasProfile: boolean
-}): boolean {
+}): boolean => {
   return query.trim().length > 0 || !hasProfile
 }

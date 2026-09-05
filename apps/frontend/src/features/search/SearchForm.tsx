@@ -17,13 +17,13 @@ export type SearchFormProps = {
   onSubmit(): void
 }
 
-function isTextEntryTarget(target: EventTarget | null): boolean {
+const isTextEntryTarget = (target: EventTarget | null): boolean => {
   if (!(target instanceof HTMLElement)) return false
   if (target.isContentEditable) return true
   return ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'A'].includes(target.tagName)
 }
 
-export function SearchForm({
+export const SearchForm = ({
   view,
   query,
   profile,
@@ -32,7 +32,7 @@ export function SearchForm({
   onProfileSelect,
   onProfileRemove,
   onSubmit,
-}: SearchFormProps): ReactElement {
+}: SearchFormProps): ReactElement => {
   const queryRef = useRef<HTMLInputElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 

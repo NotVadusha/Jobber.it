@@ -9,7 +9,7 @@ import { formatPostingDate } from '@/lib/format'
 
 type CataloguePosting = PostgresSearchResponse['data'][number]
 
-export function CataloguePostingCard({
+export const CataloguePostingCard = ({
   posting,
   resultNumber,
   terms,
@@ -17,7 +17,7 @@ export function CataloguePostingCard({
   posting: CataloguePosting
   resultNumber: number
   terms: readonly string[]
-}): ReactElement {
+}): ReactElement => {
   const { period } = useCompensationPeriod()
   const compensation = formatCompensation(
     posting.salaryMin,

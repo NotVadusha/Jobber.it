@@ -15,11 +15,11 @@ import { integerInRange, orderedValues } from '@/routing/jobs-query-values'
 
 type ApiPostingFilters = NonNullable<BestMatchRequest['filters']>
 
-export function defaultViewForQuery(query: string): JobsView {
+export const defaultViewForQuery = (query: string): JobsView => {
   return query.trim() ? 'best' : 'all'
 }
 
-export function normalizeJobsState(input: JobsUrlState): JobsUrlState {
+export const normalizeJobsState = (input: JobsUrlState): JobsUrlState => {
   const { filters, sort, page } = input
   const query = input.query.trim().slice(0, MAX_QUERY_LENGTH)
   const view: JobsView = input.view === 'best' && query ? 'best' : 'all'
@@ -46,14 +46,14 @@ export function normalizeJobsState(input: JobsUrlState): JobsUrlState {
   }
 }
 
-export function withJobsView(state: JobsUrlState, view: JobsView): JobsUrlState {
+export const withJobsView = (state: JobsUrlState, view: JobsView): JobsUrlState => {
   if (view === 'best' && !state.query.trim()) return { ...state, view: 'all' }
   return view === 'best'
     ? { ...state, view, sort: 'newest', page: 1 }
     : { ...state, view, page: 1 }
 }
 
-export function toApiFilters(filters: JobsUrlFilters): ApiPostingFilters {
+export const toApiFilters = (filters: JobsUrlFilters): ApiPostingFilters => {
   return {
     remote_policy: [...filters.remote_policy],
     seniority: [...filters.seniority],

@@ -6,7 +6,7 @@ export type FilterGroupProps = {
   children: ReactNode
 }
 
-export function FilterGroup({ title, output, children }: FilterGroupProps): ReactElement {
+export const FilterGroup = ({ title, output, children }: FilterGroupProps): ReactElement => {
   return (
     <fieldset>
       <legend className="flex w-full items-center justify-between gap-3 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-tertiary">

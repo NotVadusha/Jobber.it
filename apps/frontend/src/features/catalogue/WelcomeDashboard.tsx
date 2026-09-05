@@ -23,7 +23,7 @@ const FEATURES = [
   },
 ] as const
 
-export function WelcomeDashboard(): ReactElement {
+export const WelcomeDashboard = (): ReactElement => {
   const { data, isPending, isError, refetch } = useCorpusMetaQuery()
   const meta = data?.data
 
