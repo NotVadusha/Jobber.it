@@ -2,11 +2,11 @@ import { useState, type ReactElement } from 'react'
 
 import { ApiError } from '@/api/client'
 import { isPostingNotFound, usePostingDetailQuery } from '@/api/postings'
+import { Breadcrumb } from '@/features/job-detail/Breadcrumb'
 import { JobBody } from '@/features/job-detail/JobBody'
 import { useSavedJobs } from '@/features/saved/saved-jobs'
-import { isPlainPrimaryClick, navigate, returnToJobs } from '@/routing/hash-router'
+import { navigate } from '@/routing/hash-router'
 import { defaultJobsState } from '@/routing/jobs-model'
-import { jobsReturnContext } from '@/routing/navigation-context'
 import { copyRoutePermalink, type CopyPermalinkResult } from '@/routing/permalink'
 import { PageState } from '@/ui/PageState'
 import { Skeleton } from '@/ui/Skeleton'
@@ -19,35 +19,14 @@ const browseAllPostings = (): void => {
   navigate({ name: 'jobs', state: defaultJobsState() }, 'push')
 }
 
-const Breadcrumb = ({ title }: { title: string | null }): ReactElement => {
-  const origin = jobsReturnContext()
-  return (
-    <nav aria-label="Breadcrumb">
-      <ol className="flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-tertiary">
-        <li>
-          <a
-            href={origin?.hash ?? '#/jobs'}
-            onClick={(event) => {
-              if (!isPlainPrimaryClick(event.nativeEvent)) return
-              event.preventDefault()
-              returnToJobs()
-            }}
-            className="rounded-sm underline-offset-4 hover:text-primary hover:underline"
-          >
-            Jobs
-          </a>
-        </li>
-        <li aria-hidden="true">/</li>
-        <li aria-current="page" className="min-w-0 truncate text-secondary">
-          {title ?? 'Posting'}
-        </li>
-      </ol>
-    </nav>
-  )
-}
-
 export function JobPage({ postingId }: { postingId: string }): ReactElement {
-  const detailQuery = usePostingDetailQuery(postingId)
+  const {
+    data: detail,
+    error: detailFailure,
+    isPending,
+    isError,
+    refetch,
+  } = usePostingDetailQuery(postingId)
   const { isSaved, remove } = useSavedJobs()
   const { showToast } = useToast()
   const [permalink, setPermalink] = useState<CopyPermalinkResult | null>(null)
@@ -62,13 +41,13 @@ export function JobPage({ postingId }: { postingId: string }): ReactElement {
     setPermalink(result)
   }
 
-  const posting = detailQuery.data?.data ?? null
+  const posting = detail?.data ?? null
 
   return (
     <section className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:py-12">
       <Breadcrumb title={posting?.title ?? null} />
 
-      {detailQuery.isPending && (
+      {isPending && (
         <div className="mt-6 flex flex-col gap-3">
           <Skeleton className="h-8 w-3/4" label="Loading posting" />
           <Skeleton className="h-4 w-1/2" />
@@ -76,7 +55,7 @@ export function JobPage({ postingId }: { postingId: string }): ReactElement {
         </div>
       )}
 
-      {detailQuery.isError && isPostingNotFound(detailQuery.error) && (
+      {isError && isPostingNotFound(detailFailure) && (
         <PageState
           kind="empty"
           title="This posting is not in the catalogue"
@@ -96,18 +75,18 @@ export function JobPage({ postingId }: { postingId: string }): ReactElement {
         />
       )}
 
-      {detailQuery.isError && !isPostingNotFound(detailQuery.error) && (
+      {isError && !isPostingNotFound(detailFailure) && (
         <PageState
           kind="error"
           title="This posting could not be loaded"
           description={
-            detailQuery.error instanceof ApiError &&
-            detailQuery.error.code === 'CATALOGUE_UNAVAILABLE'
+            detailFailure instanceof ApiError &&
+            detailFailure.code === 'CATALOGUE_UNAVAILABLE'
               ? 'The postings catalogue is temporarily unavailable.'
               : 'The posting could not be reached.'
           }
           action={
-            <button type="button" onClick={() => void detailQuery.refetch()} className={ACTION_CLASS}>
+            <button type="button" onClick={() => void refetch()} className={ACTION_CLASS}>
               Try again
             </button>
           }
