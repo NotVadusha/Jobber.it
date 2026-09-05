@@ -2,7 +2,8 @@ import type { ReactElement } from 'react'
 
 import type { PostgresSearchResponse } from '@/api/search'
 import { HighlightedText } from '@/features/jobs/HighlightedText'
-import { PostingFacts, PostingStack } from '@/features/jobs/PostingFacts'
+import { PostingFacts } from '@/features/jobs/PostingFacts'
+import { PostingStack } from '@/features/jobs/PostingStack'
 
 type CataloguePosting = PostgresSearchResponse['data'][number]
 

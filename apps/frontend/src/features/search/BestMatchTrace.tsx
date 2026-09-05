@@ -2,7 +2,7 @@ import type { ReactElement } from 'react'
 
 import type { BestMatchData } from '@/api/search'
 import type { BestMatchStageState, BestMatchStreamStatus } from '@/api/search-stream'
-import { Label } from '@/features/search/SearchForm'
+import { Label } from '@/features/search/Label'
 import '@/features/search/best-match.css'
 
 type StagePresentation = {

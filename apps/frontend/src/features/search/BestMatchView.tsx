@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactElement } from 'react'
+import type { ReactElement } from 'react'
 
 import { ApiError } from '@/api/client'
 import type { BestMatchRequest } from '@/api/search'
@@ -10,6 +10,7 @@ import {
 } from '@/api/search-stream'
 import { BestMatchResults } from '@/features/search/BestMatchResults'
 import { BestMatchTrace } from '@/features/search/BestMatchTrace'
+import { Cooldown } from '@/features/search/Cooldown'
 import { isRankingPending } from '@/features/search/best-match-state'
 import { PageState } from '@/ui/PageState'
 import { Skeleton } from '@/ui/Skeleton'
@@ -19,24 +20,6 @@ const retryAfterSeconds = (error: ApiError): number | null => {
   if (typeof details !== 'object' || details === null) return null
   const value = (details as Record<string, unknown>).retryAfterSeconds
   return typeof value === 'number' && value > 0 ? value : null
-}
-
-const Cooldown = ({ seconds }: { seconds: number }): ReactElement => {
-  const [remaining, setRemaining] = useState(seconds)
-
-  useEffect(() => {
-    setRemaining(seconds)
-    const timer = window.setInterval(() => {
-      setRemaining((current) => (current > 0 ? current - 1 : 0))
-    }, 1000)
-    return () => window.clearInterval(timer)
-  }, [seconds])
-
-  return (
-    <span role="status" className="font-mono text-xs tabular-nums text-tertiary">
-      {remaining > 0 ? `${remaining}s remaining` : 'You can search again'}
-    </span>
-  )
 }
 
 export const BestMatchView = ({
@@ -50,11 +33,14 @@ export const BestMatchView = ({
   onRun(): void
   onBrowseAllPostings(): void
 }): ReactElement => {
-  const query = useBestMatchStreamQuery(selection)
+  const {
+    data,
+    error: streamFailure,
+    isFetching: streaming,
+  } = useBestMatchStreamQuery(selection)
   const cancel = useCancelBestMatchStream()
-  const state = query.data ?? null
-  const error = query.error instanceof ApiError ? query.error : null
-  const streaming = query.isFetching
+  const state = data ?? null
+  const error = streamFailure instanceof ApiError ? streamFailure : null
   const pending = isRankingPending(pendingRequest, selection?.request ?? null)
   const cooldown = error?.code === 'RATE_LIMITED' ? retryAfterSeconds(error) : null
   // Rendered from the first paint, all stages pending, so the rail cannot

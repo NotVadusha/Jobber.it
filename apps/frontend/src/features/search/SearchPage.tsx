@@ -77,7 +77,7 @@ export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactEleme
 
   const visibleView: JobsView =
     !urlState.query && cvOnlyBestVisible ? 'best' : urlState.view
-  const bestMatchQuery = useBestMatchStreamQuery(
+  const { isFetching: bestMatchFetching } = useBestMatchStreamQuery(
     visibleView === 'best' ? selection : null,
   )
   const appliedHash = encodeJobsState(urlState)
