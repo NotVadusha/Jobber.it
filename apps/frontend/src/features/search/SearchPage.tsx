@@ -77,13 +77,14 @@ export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactEleme
 
   const visibleView: JobsView =
     !urlState.query && cvOnlyBestVisible ? 'best' : urlState.view
-  const bestMatchQuery = usePineconeSearchQuery(
-    visibleView === 'best' ? selection : null,
-  )
-  const bestData = bestMatchQuery.data?.data ?? null
+  const {
+    data: bestMatchResponse,
+    error: bestMatchFailure,
+    isFetching: bestMatchFetching,
+  } = usePineconeSearchQuery(visibleView === 'best' ? selection : null)
+  const bestData = bestMatchResponse?.data ?? null
   const bestError =
-    localError ??
-    (bestMatchQuery.error instanceof ApiError ? bestMatchQuery.error : null)
+    localError ?? (bestMatchFailure instanceof ApiError ? bestMatchFailure : null)
   const appliedHash = encodeJobsState(urlState)
   const catalogueDraftState = useMemo(
     () => buildCatalogueDraftState({
@@ -118,13 +119,13 @@ export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactEleme
     return () => window.clearTimeout(timeout)
   }, [appliedHash, catalogueDraftHash, catalogueDraftState, visibleView])
 
-  function commitCatalogueDraft(mode: 'push' | 'replace'): void {
+  const commitCatalogueDraft = (mode: 'push' | 'replace'): void => {
     setLocalError(null)
     setCvOnlyBestVisible(false)
     navigate({ name: 'jobs', state: catalogueDraftState }, mode)
   }
 
-  function runBestMatch(queryOverride = draft.query): void {
+  const runBestMatch = (queryOverride = draft.query): void => {
     const query = queryOverride.trim()
     const profileText = profile?.text ?? ''
     if (!query && !profileText) {
@@ -165,7 +166,7 @@ export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactEleme
     })
   }
 
-  function submit(): void {
+  const submit = (): void => {
     if (visibleView === 'all') {
       commitCatalogueDraft('replace')
       return
@@ -173,7 +174,7 @@ export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactEleme
     runBestMatch()
   }
 
-  function changeView(view: JobsView): void {
+  const changeView = (view: JobsView): void => {
     if (view === 'best') {
       runBestMatch()
       return
@@ -183,7 +184,7 @@ export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactEleme
     navigate({ name: 'jobs', state: catalogueDraftState }, 'push')
   }
 
-  async function selectProfile(file: File | null): Promise<void> {
+  const selectProfile = async (file: File | null): Promise<void> => {
     if (!file) return
     try {
       const document = await readProfile(file)
@@ -204,7 +205,7 @@ export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactEleme
     }
   }
 
-  function clearFilters(): void {
+  const clearFilters = (): void => {
     const filters = emptyCatalogueFilters()
     dispatch({ type: 'filters.changed', filters })
     if (visibleView === 'all') {
@@ -215,7 +216,7 @@ export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactEleme
     }
   }
 
-  function clearQuery(): void {
+  const clearQuery = (): void => {
     dispatch({ type: 'query.changed', query: '' })
     setCvOnlyBestVisible(false)
     navigate({
@@ -240,7 +241,7 @@ export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactEleme
           view={visibleView}
           query={draft.query}
           profile={profile}
-          busy={bestMatchQuery.isFetching}
+          busy={bestMatchFetching}
           onQueryChange={(query) => dispatch({ type: 'query.changed', query })}
           onProfileSelect={(file) => void selectProfile(file)}
           onProfileRemove={() => {
@@ -285,14 +286,14 @@ export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactEleme
           )}
           {!bestError && !bestData && (
             <PageState
-              kind={bestMatchQuery.isFetching ? 'loading' : 'empty'}
+              kind={bestMatchFetching ? 'loading' : 'empty'}
               title={
-                bestMatchQuery.isFetching
+                bestMatchFetching
                   ? 'Ranking postings'
                   : 'Best matches has not run yet'
               }
               description={
-                bestMatchQuery.isFetching
+                bestMatchFetching
                   ? undefined
                   : 'Best matches orders postings by semantic relevance. Run the search to rank the current query, attached profile, and filters.'
               }
@@ -302,10 +303,10 @@ export function SearchPage({ urlState }: { urlState: JobsUrlState }): ReactEleme
             <>
               <SearchTrace
                 data={bestData}
-                tookMs={bestMatchQuery.data?.meta.tookMs}
-                busy={bestMatchQuery.isFetching}
+                tookMs={bestMatchResponse?.meta.tookMs}
+                busy={bestMatchFetching}
               />
-              <SearchResults data={bestData} busy={bestMatchQuery.isFetching} />
+              <SearchResults data={bestData} busy={bestMatchFetching} />
             </>
           )}
         </div>

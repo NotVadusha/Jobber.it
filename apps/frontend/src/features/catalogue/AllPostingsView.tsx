@@ -32,8 +32,15 @@ export function AllPostingsView({
 }: AllPostingsViewProps): ReactElement {
   const resultsRef = useRef<HTMLDivElement>(null)
   const request = useMemo(() => buildPostgresSearchRequest(state), [state])
-  const postingsQuery = usePostgresSearchQuery(request)
-  const pagination = postingsQuery.data?.meta.pagination
+  const {
+    data,
+    error,
+    isPending,
+    isFetching,
+    isPlaceholderData,
+    refetch,
+  } = usePostgresSearchQuery(request)
+  const pagination = data?.meta.pagination
   const activeCount = activeCatalogueFilterCount(draftFilters)
   const welcomeState = normalizeJobsState({
     ...state,
@@ -43,7 +50,7 @@ export function AllPostingsView({
 
   useEffect(() => {
     if (
-      postingsQuery.isPlaceholderData ||
+      isPlaceholderData ||
       !pagination ||
       pagination.totalPages === 0 ||
       state.page <= pagination.totalPages
@@ -54,9 +61,9 @@ export function AllPostingsView({
       name: 'jobs',
       state: normalizeJobsState({ ...state, page: pagination.totalPages }),
     }, 'replace')
-  }, [pagination, postingsQuery.isPlaceholderData, state])
+  }, [pagination, isPlaceholderData, state])
 
-  function changeSort(sort: BrowseSort): void {
+  const changeSort = (sort: BrowseSort): void => {
     navigate({
       name: 'jobs',
       state: normalizeJobsState({
@@ -70,7 +77,7 @@ export function AllPostingsView({
     }, 'push')
   }
 
-  function changePage(page: number): void {
+  const changePage = (page: number): void => {
     navigate({
       name: 'jobs',
       state: normalizeJobsState({ ...state, page }),
@@ -94,16 +101,16 @@ export function AllPostingsView({
           query={state.query}
           activeFilterCount={activeCount}
           sort={state.sort}
-          response={postingsQuery.data}
-          error={postingsQuery.error}
-          pending={postingsQuery.isPending}
-          fetching={postingsQuery.isFetching}
-          placeholder={postingsQuery.isPlaceholderData}
+          response={data}
+          error={error}
+          pending={isPending}
+          fetching={isFetching}
+          placeholder={isPlaceholderData}
           onSortChange={changeSort}
           onPageChange={changePage}
           onClearFilters={onClearFilters}
           onClearQuery={onClearQuery}
-          onRetry={() => void postingsQuery.refetch()}
+          onRetry={() => void refetch()}
         />
       </div>
     </div>

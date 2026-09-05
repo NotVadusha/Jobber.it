@@ -24,8 +24,8 @@ const FEATURES = [
 ] as const
 
 export function WelcomeDashboard(): ReactElement {
-  const metaQuery = useCorpusMetaQuery()
-  const meta = metaQuery.data?.data
+  const { data, isPending, isError, refetch } = useCorpusMetaQuery()
+  const meta = data?.data
 
   return (
     <section aria-labelledby="welcome-title" className="mb-8">
@@ -39,14 +39,14 @@ export function WelcomeDashboard(): ReactElement {
             <span className="ml-1">jobber — live corpus</span>
           </div>
           <div className="p-5 font-mono text-xs leading-7">
-            {metaQuery.isPending && (
+            {isPending && (
               <div className="space-y-3">
                 <Skeleton label="Loading live corpus counts" className="h-4 w-40" />
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-4/5" />
               </div>
             )}
-            {metaQuery.isError && (
+            {isError && (
               <PageState
                 compact
                 kind="error"
@@ -55,7 +55,7 @@ export function WelcomeDashboard(): ReactElement {
                 action={(
                   <button
                     type="button"
-                    onClick={() => void metaQuery.refetch()}
+                    onClick={() => void refetch()}
                     className="min-h-9 rounded-sm border border-subtle px-3 font-mono text-xs text-secondary hover:border-accent hover:text-accent"
                   >
                     Retry counts
