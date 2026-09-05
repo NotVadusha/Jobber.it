@@ -29,9 +29,28 @@ const searchWire = {
   meta: { request_id: 'req-search', took_ms: 12.5 },
 }
 
+// The catalogue is stubbed with a page count no URL under test can exceed, so
+// Plan 5's out-of-range clamp never fires and canonicalization is asserted
+// against the decoder rather than against fixture row counts.
+const catalogueWire = {
+  data: [],
+  meta: {
+    request_id: 'req-catalogue',
+    pagination: {
+      page: 1,
+      page_size: 1,
+      total_items: Number.MAX_SAFE_INTEGER,
+      total_pages: Number.MAX_SAFE_INTEGER,
+    },
+  },
+}
+
 test.beforeEach(async ({ page }) => {
   await page.route('**/api/meta', async (route) => {
     await route.fulfill({ status: 200, contentType: 'application/json', json: metaWire })
+  })
+  await page.route('**/api/postings/query', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', json: catalogueWire })
   })
 })
 
@@ -144,7 +163,7 @@ test.describe('canonical jobs URL', () => {
   for (const { name, query, expected } of numericCases) {
     test(name, async ({ page }) => {
       await page.goto(`/#/jobs?${query}`)
-      await expect(page).toHaveURL(`http://127.0.0.1:5173/${expected}`)
+      await expect(page).toHaveURL(`/${expected}`)
     })
   }
 
@@ -155,18 +174,18 @@ test.describe('canonical jobs URL', () => {
         '&page=0&page=2&page=3',
     )
     await expect(page).toHaveURL(
-      'http://127.0.0.1:5173/#/jobs?experience=0&minSalary=100&posted=7d&page=2',
+      '/#/jobs?experience=0&minSalary=100&posted=7d&page=2',
     )
   })
 
   test('Unicode and reserved query characters survive canonicalization and submission', async ({ page }) => {
     await mockSearch(page)
     await page.goto('/#/jobs?q=%20C%2B%2B+%C4%8Desk%C3%BD+%3F+%26+%2F%20')
-    const expectedUrl = 'http://127.0.0.1:5173/#/jobs?q=C%2B%2B%20%C4%8Desk%C3%BD%20%3F%20%26%20%2F'
+    const expectedUrl = '/#/jobs?q=C%2B%2B%20%C4%8Desk%C3%BD%20%3F%20%26%20%2F'
 
-    await expect(page.getByRole('textbox', { name: 'Query' })).toHaveValue('C++ český ? & /')
+    await expect(page.getByRole('textbox', { name: 'Search postings' })).toHaveValue('C++ český ? & /')
     await expect(page).toHaveURL(expectedUrl)
-    await page.getByRole('button', { name: 'Search' }).click()
+    await page.getByRole('button', { name: 'Best matches' }).click()
     await expect(page).toHaveURL(expectedUrl)
   })
 })
@@ -222,8 +241,8 @@ test.describe('history', () => {
       jobber: { entryId: originalEntryId },
     })
 
-    await page.getByRole('textbox', { name: 'Query' }).fill('postgres')
-    await page.getByRole('button', { name: 'Search' }).click()
+    await page.getByRole('textbox', { name: 'Search postings' }).fill('postgres')
+    await page.getByRole('button', { name: 'Best matches' }).click()
     await expect(page).toHaveURL(/q=postgres$/)
     const pushedState = await page.evaluate(() => window.history.state)
     expect(pushedState.anotherApp).toEqual({ expanded: true })
