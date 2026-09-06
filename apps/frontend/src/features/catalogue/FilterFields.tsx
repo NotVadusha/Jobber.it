@@ -114,61 +114,81 @@ export const FilterFields = ({
         </div>
       </FilterGroup>
 
-      <FilterGroup title="Candidate experience" output={experienceOutput}>
-        <input
-          id={`${idPrefix}-experience`}
-          type="number"
-          min="0"
-          max="60"
-          step="1"
-          value={experienceValue}
-          aria-label="Candidate experience"
-          aria-valuetext={experienceOutput}
-          onChange={(event) => {
-            const raw = event.currentTarget.value
-            const value = Number(raw)
-            if (!Number.isInteger(value) || value < 0 || value > 60) return
-            onChange({
-              ...filters,
-              experience_years: raw === '' ? null : value,
-            })
-          }}
-          placeholder="Any"
-          className="min-h-10 w-full rounded-sm border border-strong bg-canvas px-3 text-sm text-primary"
-        />
-        <div className="mt-2 flex items-center justify-between gap-2 text-xs text-secondary">
-          <span>Years of experience</span>
-          <button type="button" onClick={() => onChange({ ...filters, experience_years: null })} className="min-h-8 px-2 text-accent-text underline underline-offset-4">Any experience</button>
+      <FilterGroup title="Candidate experience">
+        <div className="relative">
+          <input
+            id={`${idPrefix}-experience`}
+            type="number"
+            min="0"
+            max="60"
+            step="1"
+            value={experienceValue}
+            aria-label="Candidate experience"
+            aria-valuetext={experienceOutput}
+            aria-describedby={`${idPrefix}-experience-summary`}
+            onChange={(event) => {
+              const raw = event.currentTarget.value
+              const value = Number(raw)
+              if (!Number.isInteger(value) || value < 0 || value > 60) return
+              onChange({
+                ...filters,
+                experience_years: raw === '' ? null : value,
+              })
+            }}
+            placeholder="Any"
+            className="min-h-10 w-full appearance-textfield rounded-sm border border-strong bg-canvas pl-3 pr-10 text-sm text-primary [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          />
+          {filters.experience_years !== null && (
+            <button
+              type="button"
+              aria-label="Clear candidate experience"
+              onClick={() => onChange({ ...filters, experience_years: null })}
+              className="absolute inset-y-0 right-0 flex w-10 items-center justify-center border-0 bg-transparent text-secondary hover:text-primary"
+            >
+              <span aria-hidden="true" className="text-xl leading-none">×</span>
+            </button>
+          )}
         </div>
+        <p id={`${idPrefix}-experience-summary`} className="mt-2 text-xs text-secondary">
+          {experienceOutput}
+        </p>
       </FilterGroup>
 
-      <FilterGroup title="Minimum salary" output={salaryOutput}>
-        <input
-          id={`${idPrefix}-salary`}
-          type="number"
-          min="0"
-          max="1000000"
-          step="1"
-          value={salaryValue}
-          aria-label="Minimum salary"
-          aria-valuetext={salaryOutput}
-          onChange={(event) => {
-            const raw = event.currentTarget.value
-            const value = Number(raw)
-            if (!Number.isInteger(value) || value < 0 || value > 1_000_000) return
-            onChange({
-              ...filters,
-              min_salary: raw === '' || value === 0 ? null : value,
-              include_undisclosed_salary:
-                value === 0 ? false : filters.include_undisclosed_salary,
-            })
-          }}
-          placeholder="Any"
-          className="min-h-10 w-full rounded-sm border border-strong bg-canvas px-3 text-sm text-primary"
-        />
-        <div className="mt-2 flex items-center justify-between gap-2 text-xs text-secondary">
-          <span>USD per year</span>
-          <button type="button" onClick={() => onChange({ ...filters, min_salary: null, include_undisclosed_salary: false })} className="min-h-8 px-2 text-accent-text underline underline-offset-4">Any salary</button>
+      <FilterGroup title="Minimum salary · USD/year">
+        <div className="relative">
+          <input
+            id={`${idPrefix}-salary`}
+            type="number"
+            min="0"
+            max="1000000"
+            step="1"
+            value={salaryValue}
+            aria-label="Minimum salary"
+            aria-valuetext={salaryOutput}
+            onChange={(event) => {
+              const raw = event.currentTarget.value
+              const value = Number(raw)
+              if (!Number.isInteger(value) || value < 0 || value > 1_000_000) return
+              onChange({
+                ...filters,
+                min_salary: raw === '' || value === 0 ? null : value,
+                include_undisclosed_salary:
+                  value === 0 ? false : filters.include_undisclosed_salary,
+              })
+            }}
+            placeholder="Any"
+            className="min-h-10 w-full appearance-textfield rounded-sm border border-strong bg-canvas pl-3 pr-10 text-sm text-primary [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          />
+          {filters.min_salary !== null && (
+            <button
+              type="button"
+              aria-label="Clear minimum salary"
+              onClick={() => onChange({ ...filters, min_salary: null, include_undisclosed_salary: false })}
+              className="absolute inset-y-0 right-0 flex w-10 items-center justify-center border-0 bg-transparent text-secondary hover:text-primary"
+            >
+              <span aria-hidden="true" className="text-xl leading-none">×</span>
+            </button>
+          )}
         </div>
         {filters.min_salary !== null && (
           <label className="mt-3 flex min-h-9 cursor-pointer items-center gap-2 text-xs leading-snug text-secondary">
@@ -181,7 +201,7 @@ export const FilterFields = ({
               })}
               className="size-4 accent-accent"
             />
-            Include postings with undisclosed salary
+            Include undisclosed salaries
           </label>
         )}
       </FilterGroup>
