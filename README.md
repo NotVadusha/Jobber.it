@@ -257,6 +257,23 @@ createdb jobber_e2e
 E2E_DATABASE_URL=postgresql:///jobber_e2e make e2e
 ```
 
+### Backend integration tests
+
+`make test-integration` runs the Best-match pipeline against real application code and a real
+catalogue, replacing only the LLM and index adapters. It owns a second database so a browser
+run's truncate cannot race it, and it loads the same fixture as `make e2e`:
+
+1. `TEST_DATABASE_URL` resolving to a dedicated database whose name ends in `_e2e` — never a
+   development or production database. It defaults to `jobber_test_e2e` on localhost.
+2. `make test-integration`, which validates the target, migrates it, and loads fixture data.
+
+`make test-unit` needs no database at all; `make test` runs both layers.
+
+```bash
+createdb jobber_test_e2e
+make test
+```
+
 ## Architecture and contracts
 
 [CONTEXT.md](CONTEXT.md) holds the canonical domain vocabulary. The surprising decisions are
