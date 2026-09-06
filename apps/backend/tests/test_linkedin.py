@@ -48,8 +48,8 @@ def test_item_maps_to_a_posting(monkeypatch):
     assert posting.extra["salary_text"] is None
 
 
-def test_tracking_query_string_is_not_part_of_the_url():
-    (posting,) = run([ITEM], pytest.MonkeyPatch())
+def test_tracking_query_string_is_not_part_of_the_url(monkeypatch):
+    (posting,) = run([ITEM], monkeypatch)
     assert posting.url.endswith("-4370911737")
     assert "?" not in posting.url
 
