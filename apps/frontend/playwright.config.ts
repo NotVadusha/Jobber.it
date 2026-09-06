@@ -1,7 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
 
-import { RATE_LIMITED_ORIGIN, RATE_LIMITED_PORT } from './e2e/harness/servers'
-
 const databaseUrl = process.env.E2E_DATABASE_URL
 
 if (!databaseUrl) {
@@ -59,24 +57,6 @@ export default defineConfig({
       stderr: 'pipe',
       env: {
         API_PROXY_TARGET: 'http://127.0.0.1:3100',
-      },
-    },
-    {
-      command: 'uv run --project ../backend jobber',
-      url: `${RATE_LIMITED_ORIGIN}/api/meta`,
-      timeout: 120_000,
-      reuseExistingServer: false,
-      stdout: 'pipe',
-      stderr: 'pipe',
-      env: {
-        DATABASE_URL: databaseUrl,
-        PINECONE_API_KEY: 'e2e-not-used',
-        OPENAI_API_KEY: 'e2e-not-used',
-        HOST: '127.0.0.1',
-        PORT: String(RATE_LIMITED_PORT),
-        LOG_LEVEL: 'DEBUG',
-        RATE_LIMIT_MAX_SEARCHES: '3',
-        RATE_LIMIT_WINDOW_SECONDS: '60',
       },
     },
     {
