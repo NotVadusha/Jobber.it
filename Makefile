@@ -13,9 +13,23 @@ CRON    := uv run --project apps/cron
 MCP     := uv run --project apps/mcp
 WEB     := npm --prefix apps/frontend
 
-E2E_DATABASE_URL ?= postgresql://postgres:postgres@127.0.0.1:5432/jobber_e2e
+E2E_DATABASE_URL  ?= postgresql://postgres:postgres@127.0.0.1:5432/jobber_e2e
+TEST_DATABASE_URL ?= postgresql://postgres:postgres@127.0.0.1:5432/jobber_test_e2e
 
-.PHONY: install serve mcp web build test e2e e2e-db-guard e2e-db lint check verify verify-full \
+# Expanded inline in every preparation recipe rather than shared as a phony
+# prerequisite: make builds a prerequisite once per invocation, so `verify`
+# would guard whichever database came first and skip the other one entirely.
+DB_GUARD = url="$$DB_URL"; \
+	test -n "$$url" || { echo "refusing an empty database URL"; exit 1; }; \
+	name="$$(basename "$${url%%\?*}")"; \
+	case "$$name" in *_e2e) ;; \
+		*) echo "refusing database name in URL: $$name"; exit 1 ;; esac; \
+	database_name="$$(psql "$$url" -Atc 'select current_database()')" || exit 1; \
+	case "$$database_name" in *_e2e) ;; \
+		*) echo "refusing database: $$database_name"; exit 1 ;; esac
+
+.PHONY: install serve mcp web build test test-unit test-integration test-db e2e e2e-db \
+        lint check verify verify-full \
         api-contracts api-contracts-check clean migrate stamp token
 
 install:
@@ -38,10 +52,16 @@ build:
 
 # Each app carries its own [tool.pytest.ini_options], so pytest picks the app
 # directory as rootdir from the path argument.
-test:
-	$(BACKEND) pytest apps/backend/tests
+test: test-unit test-integration
+
+test-unit:
+	$(BACKEND) pytest apps/backend/tests --ignore=apps/backend/tests/integration
 	$(CRON) pytest apps/cron/tests
 	$(MCP) pytest apps/mcp/tests
+	$(WEB) run test:unit
+
+test-integration: test-db
+	TEST_DATABASE_URL="$(TEST_DATABASE_URL)" $(BACKEND) pytest apps/backend/tests/integration
 
 # Alembic reads apps/backend/alembic.ini, and script_location in it is relative,
 # so these run from that directory rather than the repo root.
@@ -71,16 +91,15 @@ check: api-contracts-check
 	$(WEB) run typecheck
 	$(BACKEND) lint-imports --config apps/backend/.importlinter
 
-e2e-db-guard:
-	@database_name="$$(psql "$(E2E_DATABASE_URL)" -Atc 'select current_database()')"; \
-	case "$$database_name" in \
-		*_e2e) ;; \
-		*) echo "refusing E2E database: $$database_name"; exit 1 ;; \
-	esac
-
-e2e-db: e2e-db-guard
+e2e-db:
+	@DB_URL="$(E2E_DATABASE_URL)"; $(DB_GUARD)
 	cd apps/backend && DATABASE_URL="$(E2E_DATABASE_URL)" uv run alembic upgrade head
-	psql "$(E2E_DATABASE_URL)" -f apps/frontend/e2e/fixtures/catalogue.sql
+	psql -v ON_ERROR_STOP=1 "$(E2E_DATABASE_URL)" -f apps/frontend/e2e/fixtures/catalogue.sql
+
+test-db:
+	@DB_URL="$(TEST_DATABASE_URL)"; $(DB_GUARD)
+	cd apps/backend && DATABASE_URL="$(TEST_DATABASE_URL)" uv run alembic upgrade head
+	psql -v ON_ERROR_STOP=1 "$(TEST_DATABASE_URL)" -f apps/frontend/e2e/fixtures/catalogue.sql
 
 e2e: e2e-db
 	E2E_DATABASE_URL="$(E2E_DATABASE_URL)" $(WEB) run e2e

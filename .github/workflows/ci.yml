@@ -28,6 +28,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/jobber_e2e
       E2E_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/jobber_e2e
+      TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/jobber_test_e2e
       PINECONE_API_KEY: e2e-not-used
       OPENAI_API_KEY: e2e-not-used
 
@@ -50,5 +51,8 @@ jobs:
           enable-cache: true
 
       - run: make install
+      # The service container creates only POSTGRES_DB; integration tests own a
+      # second database so a browser run's truncate cannot race them.
+      - run: psql "$DATABASE_URL" -c 'create database jobber_test_e2e'
       - run: npm --prefix apps/frontend exec playwright install --with-deps chromium
       - run: make verify-full
