@@ -138,17 +138,17 @@ test('keeps annual salary canonical while monthly presentation persists', async 
   )
 
   await expect(postingItems(page)).toHaveCount(2)
-  await expect(activeFilters(page).getByText('At least $200k/yr', { exact: true })).toBeVisible()
+  await expect(activeFilters(page).getByRole('spinbutton', { name: 'Minimum salary' })).toHaveAttribute('aria-valuetext', 'At least $200k/yr')
 
   await changeAndWait(page, () =>
-    page.getByRole('checkbox', { name: 'Include postings with undisclosed salary' }).check(),
+    page.getByRole('checkbox', { name: 'Include undisclosed salaries' }).check(),
   )
   await expect(postingItems(page)).toHaveCount(3)
-  await expect(activeFilters(page).getByText('At least $200k/yr or undisclosed', { exact: true })).toBeVisible()
+  await expect(activeFilters(page).getByRole('spinbutton', { name: 'Minimum salary' })).toHaveAttribute('aria-valuetext', 'At least $200k/yr or undisclosed')
 
   const hashBefore = await page.evaluate(() => window.location.hash)
   await page.getByRole('button', { name: 'monthly', exact: true }).click()
-  await expect(activeFilters(page).getByText('At least $16.7k/mo or undisclosed', { exact: true })).toBeVisible()
+  await expect(activeFilters(page).getByRole('spinbutton', { name: 'Minimum salary' })).toHaveAttribute('aria-valuetext', 'At least $16.7k/mo or undisclosed')
   await expect.poll(() => page.evaluate(() => window.location.hash)).toBe(hashBefore)
   await page.reload()
   await expect(page.getByRole('button', { name: 'monthly', exact: true })).toHaveAttribute('aria-pressed', 'true')
