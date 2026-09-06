@@ -9,6 +9,30 @@ from typing import Any, Literal
 
 ServiceName = Literal["backend", "cron", "mcp", "script"]
 
+# httpx/httpcore ship as two installed distributions here — the 2.x line under
+# the httpx2/httpcore2 import names, which is what the OpenAI SDK talks to — so
+# both spellings are named or half the vendor records stay unfiltered.
+VENDOR_NAMESPACES = frozenset({
+    "anthropic",
+    "httpcore",
+    "httpcore2",
+    "httpx",
+    "httpx2",
+    "openai",
+    "pinecone",
+    "urllib3",
+})
+
+
+class VendorDebugFilter(logging.Filter):
+    # Vendor SDKs log whole request bodies at DEBUG — CV and query text with
+    # them. The guard sits on the handler, not on each logger, because a child
+    # logger the SDK configures itself would otherwise reopen the hole.
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.levelno >= logging.INFO:
+            return True
+        return record.name.split(".", 1)[0] not in VENDOR_NAMESPACES
+
 
 class JsonFormatter(logging.Formatter):
     def __init__(self, service: ServiceName) -> None:
@@ -33,6 +57,7 @@ class JsonFormatter(logging.Formatter):
 def configure_logging(*, service: ServiceName, level: str = "INFO") -> None:
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(JsonFormatter(service))
+    handler.addFilter(VendorDebugFilter())
     root = logging.getLogger()
     root.handlers.clear()
     root.addHandler(handler)
