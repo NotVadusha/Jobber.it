@@ -125,14 +125,17 @@ def test_the_handler_drops_vendor_debug_even_when_the_child_logger_asks_for_it(
     log_stream, namespace,
 ):
     child = logging.getLogger(f"{namespace}._internal")
+    original_level = child.level
     child.setLevel(logging.DEBUG)
+    try:
+        child.debug("Request options: %s", GOAL_BEACON)
+        child.info("Retrying request")
 
-    child.debug("Request options: %s", GOAL_BEACON)
-    child.info("Retrying request")
-
-    output = emitted(log_stream)
-    assert GOAL_BEACON not in output
-    assert "Retrying request" in output
+        output = emitted(log_stream)
+        assert GOAL_BEACON not in output
+        assert "Retrying request" in output
+    finally:
+        child.setLevel(original_level)
 
 
 def test_a_real_provider_request_carries_the_beacons_but_the_logs_do_not(
@@ -171,7 +174,7 @@ def test_a_successful_search_logs_its_completion_without_the_beacons(
 
 
 def test_a_cv_only_rewrite_failure_logs_its_reason_without_the_cv(
-    log_stream, client, openai_requests,
+    log_stream, client, openai_requests, retrieval, rerank,
 ):
     openai_requests.failure = f"upstream said {UPSTREAM_BEACON}"
 
@@ -182,6 +185,8 @@ def test_a_cv_only_rewrite_failure_logs_its_reason_without_the_cv(
     assert '"event":"rewrite_unavailable"' in output
     assert CV_BEACON not in output
     assert UPSTREAM_BEACON not in output
+    assert retrieval.calls == []
+    assert rerank.calls == []
 
 
 def test_a_mixed_input_fallback_logs_its_degradation_without_the_beacons(
@@ -200,8 +205,11 @@ def test_a_mixed_input_fallback_logs_its_degradation_without_the_beacons(
     assert response.status_code == 200
     output = emitted(log_stream)
     assert '"event":"search_rewrite_degraded"' in output
+    assert GOAL_BEACON not in output
     assert CV_BEACON not in output
     assert UPSTREAM_BEACON not in output
+    assert retrieval.calls[0]["dense_text"] == GOAL_BEACON
+    assert CV_BEACON not in repr(retrieval.calls[0])
 
 
 def test_the_stream_completes_without_writing_the_beacons_to_the_log(
@@ -222,3 +230,48 @@ def test_the_stream_completes_without_writing_the_beacons_to_the_log(
     output = emitted(log_stream)
     assert GOAL_BEACON not in output
     assert CV_BEACON not in output
+
+
+def test_the_stream_reports_cv_only_rewrite_failure_without_sensitive_logs(
+    log_stream, client, openai_requests, retrieval, rerank,
+):
+    openai_requests.failure = f"upstream said {UPSTREAM_BEACON}"
+
+    with client.stream(
+        "POST", "/api/search/stream", json={"query": "", "profile_text": CV_BEACON}
+    ) as response:
+        frames = "".join(response.iter_text())
+
+    assert response.status_code == 200
+    assert "search.failed" in frames
+    output = emitted(log_stream)
+    assert '"event":"rewrite_unavailable"' in output
+    assert CV_BEACON not in output
+    assert UPSTREAM_BEACON not in output
+    assert retrieval.calls == []
+    assert rerank.calls == []
+
+
+def test_the_stream_falls_back_to_goal_without_sensitive_logs(
+    log_stream, client, openai_requests, retrieval, rerank,
+):
+    openai_requests.failure = f"upstream said {UPSTREAM_BEACON}"
+    retrieval.returns([
+        {"posting_id": INTERN, "section": "requirements", "chunk_text": "Python services"},
+    ])
+    rerank.returns([{"id": INTERN, "score": 0.9}])
+
+    with client.stream(
+        "POST", "/api/search/stream", json={"query": GOAL_BEACON, "profile_text": CV_BEACON}
+    ) as response:
+        frames = "".join(response.iter_text())
+
+    assert response.status_code == 200
+    assert "search.completed" in frames
+    output = emitted(log_stream)
+    assert '"event":"search_rewrite_degraded"' in output
+    assert GOAL_BEACON not in output
+    assert CV_BEACON not in output
+    assert UPSTREAM_BEACON not in output
+    assert retrieval.calls[0]["dense_text"] == GOAL_BEACON
+    assert CV_BEACON not in repr(retrieval.calls[0])

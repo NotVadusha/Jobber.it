@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from jobber import catalog, db
+import pytest
+
+from jobber import catalog, db, ranking
 from jobber.postings import PostingFilters
 
 LIVE = "greenhouse:e2e-01"
@@ -27,10 +29,9 @@ def test_the_delisted_row_is_not_a_live_candidate():
     assert catalog.live_candidates((DELISTED,), PostingFilters()) == {}
 
 
-def test_an_unconfigured_external_call_fails_immediately(retrieval):
-    try:
-        retrieval._resolve()
-    except AssertionError as error:
-        assert "pinecone.search" in str(error)
-    else:
-        raise AssertionError("an unconfigured external call must not silently succeed")
+def test_an_unconfigured_rewrite_fails_the_ranking_test_instead_of_becoming_a_fallback():
+    with pytest.raises(pytest.fail.Exception, match="providers.call.*without being configured"):
+        ranking.rank_best_matches(
+            query="platform engineer", profile_text="", filters=PostingFilters(),
+            request_id="req-unconfigured",
+        )
