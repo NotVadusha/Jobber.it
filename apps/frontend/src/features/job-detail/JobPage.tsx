@@ -29,7 +29,7 @@ export function JobPage({ postingId }: { postingId: string }): ReactElement {
   const posting = detail?.data ?? null
 
   return (
-    <section className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:py-12">
+    <section className="mx-auto w-full max-w-[var(--layout-content-max)] px-4 py-8 sm:px-6 lg:py-12">
       <Breadcrumb title={posting?.title ?? null} />
 
       {isPending && (

@@ -197,8 +197,37 @@ test('the Best-matches submit stays disabled without a query or profile', async 
 
   const input = page.getByRole('textbox', { name: 'Search postings' })
   await input.fill('')
-  await expect(submit).toBeDisabled()
+  await expect(submit).toHaveAttribute('aria-disabled', 'true')
+  await submit.focus()
+  await expect(submit).toBeFocused()
+  const tooltip = page.getByRole('tooltip', {
+    name: 'Enter a query or attach a CV to search for best matches.',
+  })
+  await expect(tooltip).toHaveText(
+    'Enter a query or attach a CV to search for best matches.',
+  )
+  await expect(tooltip).toHaveCSS('opacity', '1')
+  await submit.press('Enter')
+  await expect(page.getByRole('alert')).toHaveCount(0)
 
   await input.fill('postgres')
-  await expect(submit).toBeEnabled()
+  await expect(submit).not.toHaveAttribute('aria-disabled')
+})
+
+test('the inactive Best matches tab explains how to enable it without changing views', async ({ page }) => {
+  await page.goto('/#/jobs')
+  const urlBefore = page.url()
+
+  const bestMatches = page.getByRole('button', { name: 'Best matches', exact: true })
+  await expect(bestMatches).toHaveAttribute('aria-disabled', 'true')
+  await bestMatches.focus()
+  await expect(bestMatches).toBeFocused()
+  const tooltip = page.getByRole('tooltip', {
+    name: 'Enter a query or attach a CV to enable Best matches.',
+  })
+  await expect(tooltip).toHaveText('Enter a query or attach a CV to enable Best matches.')
+  await expect(tooltip).toHaveCSS('opacity', '1')
+
+  await bestMatches.press('Enter')
+  await expect(page).toHaveURL(urlBefore)
 })

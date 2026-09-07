@@ -54,13 +54,20 @@ export const SearchForm = ({
     : busy
       ? 'Searching'
       : 'Find matches'
+  const disabledReason = view !== 'best'
+    ? null
+    : busy
+      ? 'A Best matches search is already running.'
+      : !query.trim() && !hasProfile
+        ? 'Enter a query or attach a CV to search for best matches.'
+        : null
 
   return (
     <form
       role="search"
       onSubmit={(event) => {
         event.preventDefault()
-        onSubmit()
+        if (disabledReason === null) onSubmit()
       }}
     >
       <label htmlFor="jobs-query" className="sr-only">Search postings</label>
@@ -82,13 +89,27 @@ export const SearchForm = ({
         <kbd className="hidden rounded-sm border border-subtle bg-surface-raised px-2 py-1 font-mono text-[10px] text-tertiary sm:inline">
           /
         </kbd>
-        <button
-          type="submit"
-          disabled={view === 'best' && (busy || (!query.trim() && !hasProfile))}
-          className="min-h-10 shrink-0 rounded-sm bg-accent px-3 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-ink transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
-        >
-          {buttonLabel}
-        </button>
+        <span className="group relative inline-flex">
+          <button
+            type="submit"
+            aria-disabled={disabledReason ? 'true' : undefined}
+            aria-describedby={disabledReason ? 'best-matches-disabled-reason' : undefined}
+            className={`min-h-10 shrink-0 rounded-sm bg-accent px-3 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-ink transition-colors sm:px-4 ${
+              disabledReason ? 'cursor-not-allowed opacity-50' : 'hover:bg-accent-hover'
+            }`}
+          >
+            {buttonLabel}
+          </button>
+          {disabledReason && (
+            <span
+              id="best-matches-disabled-reason"
+              role="tooltip"
+              className="pointer-events-none absolute top-full right-0 z-10 mt-2 w-64 rounded-md border border-strong bg-surface-raised px-3 py-2 text-left font-mono text-[11px] leading-relaxed text-secondary opacity-0 shadow-elevated transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 motion-reduce:transition-none"
+            >
+              {disabledReason}
+            </span>
+          )}
+        </span>
       </div>
 
       <div className="mt-4">{cvSlot}</div>

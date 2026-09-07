@@ -206,6 +206,29 @@ test('both themes expose complete readable semantic tokens', async ({ page }) =>
 
 const REQUIRED_VIEWPORTS = [320, 768, 1024, 1440] as const
 
+test('every screen uses the header content width at desktop size', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+
+  for (const hash of [
+    '#/jobs',
+    '#/job/jobico:e2e-13',
+    '#/saved',
+    '#/ranking',
+    '#/privacy',
+    '#/changelog',
+    '#/about',
+  ]) {
+    await page.goto(`/${hash}`)
+
+    const headerBox = await page.locator('header > div').boundingBox()
+    const contentBox = await page.locator('main > :first-child').boundingBox()
+    expect(headerBox, `header content box for ${hash}`).not.toBeNull()
+    expect(contentBox, `screen content box for ${hash}`).not.toBeNull()
+    expect(contentBox!.x, `content aligns with header for ${hash}`).toBe(headerBox!.x)
+    expect(contentBox!.width, `content width matches header for ${hash}`).toBe(headerBox!.width)
+  }
+})
+
 test('no horizontal overflow and focused content clears the sticky header across required widths', async ({
   page,
 }) => {
