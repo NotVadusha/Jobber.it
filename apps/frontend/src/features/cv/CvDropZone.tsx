@@ -63,7 +63,7 @@ export const CvDropZone = ({
     }
   }
 
-  const onDrop = (event: DragEvent<HTMLDivElement>): void => {
+  const onDrop = (event: DragEvent<HTMLLabelElement>): void => {
     event.preventDefault()
     dragDepth.current = 0
     setDragging(false)
@@ -148,7 +148,7 @@ export const CvDropZone = ({
 
   return (
     <section aria-label="CV search" className="flex flex-col gap-2">
-      <div
+      <label
         onDragEnter={(event) => {
           event.preventDefault()
           dragDepth.current += 1
@@ -161,29 +161,29 @@ export const CvDropZone = ({
         }}
         onDrop={onDrop}
         aria-busy={reading !== null}
-        className={`rounded-md border border-dashed p-4 text-center transition-colors motion-reduce:transition-none ${
+        className={`block cursor-pointer rounded-md border border-dashed p-4 text-center transition-colors motion-reduce:transition-none ${
           dragging ? 'border-accent bg-accent-soft' : 'border-subtle bg-surface'
         }`}
       >
-        <label className="cursor-pointer font-mono text-xs text-secondary">
-          <input
-            ref={inputRef}
-            type="file"
-            accept={PROFILE_ACCEPT}
-            onChange={(event) => void accept(event.currentTarget.files?.[0])}
-            className="sr-only"
-          />
+        <input
+          ref={inputRef}
+          type="file"
+          accept={PROFILE_ACCEPT}
+          onChange={(event) => void accept(event.currentTarget.files?.[0])}
+          className="sr-only"
+        />
+        <span className="font-mono text-xs text-secondary">
           {dragging ? 'Release to attach' : 'Drop a CV here, or choose a file'}
-        </label>
-        <p className="mt-1 font-mono text-[11px] text-tertiary">
+        </span>
+        <span className="mt-1 block font-mono text-[11px] text-tertiary">
           PDF, TXT, or Markdown · up to 5 MB and 50,000 extracted characters
-        </p>
+        </span>
         {reading && (
-          <p id={statusId} role="status" className="mt-2 font-mono text-[11px] text-tertiary">
+          <span id={statusId} role="status" className="mt-2 block font-mono text-[11px] text-tertiary">
             {`Reading ${reading}…`}
-          </p>
+          </span>
         )}
-      </div>
+      </label>
 
       <p className="text-xs text-tertiary">
         <a className="text-accent underline underline-offset-4" href="#/privacy">

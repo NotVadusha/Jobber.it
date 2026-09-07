@@ -128,6 +128,15 @@ test.describe('after consent', () => {
     await expect(page.getByText(/0 characters/)).toHaveCount(0)
   })
 
+  test('clicking the padded drop zone opens the file chooser', async ({ page }) => {
+    await page.goto('/')
+
+    const dropZone = cvRegion(page).locator('[aria-busy]')
+    const chooser = page.waitForEvent('filechooser', { timeout: 2_000 })
+    await dropZone.click({ position: { x: 4, y: 4 } })
+    await (await chooser).setFiles([])
+  })
+
   test('attaching a scanned PDF is rejected with the OCR message and makes no request', async ({ page }) => {
     const requests: string[] = []
     page.on('request', (request) => {
