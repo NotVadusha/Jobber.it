@@ -11,16 +11,14 @@ from psycopg_pool import ConnectionPool
 from jobber import catalog, config, db, pinecone, providers
 from jobber.api import ratelimit
 from jobber.api.app import app
+from tests.support.database import validated_url
 
 
 def _database_url() -> str:
-    url = os.environ.get("TEST_DATABASE_URL", "").strip()
-    if not url:
-        raise RuntimeError("TEST_DATABASE_URL is not set; run `make test-integration`")
-    name = url.split("?", 1)[0].rstrip("/").rsplit("/", 1)[-1]
-    if not name.endswith("_e2e"):
-        raise RuntimeError(f"TEST_DATABASE_URL must name a database ending in _e2e, got {name}")
-    return url
+    try:
+        return validated_url(os.environ.get("TEST_DATABASE_URL", ""))
+    except ValueError as error:
+        raise RuntimeError(f"invalid TEST_DATABASE_URL: {error}") from error
 
 
 @pytest.fixture(scope="session")
@@ -102,7 +100,7 @@ class _Recorder:
 
     def _resolve(self) -> object:
         if not self._configured:
-            raise AssertionError(f"{self._name} was called without being configured")
+            pytest.fail(f"{self._name} was called without being configured")
         if self._error is not None:
             raise self._error
         return self._result

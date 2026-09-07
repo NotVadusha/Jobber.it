@@ -21,9 +21,6 @@ TEST_DATABASE_URL ?= postgresql://postgres:postgres@127.0.0.1:5432/jobber_test_e
 # would guard whichever database came first and skip the other one entirely.
 DB_GUARD = url="$$DB_URL"; \
 	test -n "$$url" || { echo "refusing an empty database URL"; exit 1; }; \
-	name="$$(basename "$${url%%\?*}")"; \
-	case "$$name" in *_e2e) ;; \
-		*) echo "refusing database name in URL: $$name"; exit 1 ;; esac; \
 	database_name="$$(psql "$$url" -Atc 'select current_database()')" || exit 1; \
 	case "$$database_name" in *_e2e) ;; \
 		*) echo "refusing database: $$database_name"; exit 1 ;; esac

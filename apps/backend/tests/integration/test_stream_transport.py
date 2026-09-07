@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import threading
+import time
 from collections.abc import Iterator
 
 import httpx
@@ -26,14 +27,15 @@ def served() -> Iterator[str]:
     thread = threading.Thread(target=server.run, daemon=True)
     thread.start()
     try:
-        started = threading.Event()
-        while not started.wait(0.02):
+        deadline = time.monotonic() + STARTUP_TIMEOUT
+        while time.monotonic() < deadline:
             if server.started:
                 break
             if not thread.is_alive():
                 raise RuntimeError("the test server stopped before it accepted a socket")
-        else:  # pragma: no cover - the loop only exits through the breaks above
-            raise RuntimeError("unreachable")
+            time.sleep(0.02)
+        else:
+            raise RuntimeError("the test server did not start before the timeout")
         port = server.servers[0].sockets[0].getsockname()[1]
         yield f"http://127.0.0.1:{port}"
     finally:
@@ -66,26 +68,34 @@ def test_the_first_frame_reaches_the_wire_before_the_search_finishes(
         ) as response:
             assert response.status_code == 200
             lines = response.iter_lines()
+            try:
+                started_data = ""
+                for line in lines:
+                    if line.startswith("event:"):
+                        names.append(line.split(":", 1)[1].strip())
+                    elif line.startswith("data:") and names == ["search.started"]:
+                        started_data = line.split(":", 1)[1].strip()
+                    elif not line and names == ["search.started"]:
+                        break
 
-            for line in lines:
-                if line.startswith("event:"):
-                    names.append(line.split(":", 1)[1].strip())
-                    break
+                # The stream is still open and the pipeline is still parked
+                # inside the rewrite, so this frame crossed the network before
+                # completion.
+                assert names == ["search.started"]
+                assert json.loads(started_data)["event"] == "search.started"
+                assert reached_rewrite.wait(timeout=FIRST_FRAME_TIMEOUT)
+                assert not release.is_set()
+                release.set()
 
-            # The stream is still open and the pipeline is still parked inside
-            # the rewrite, so this frame crossed the network before completion.
-            assert names == ["search.started"]
-            assert reached_rewrite.wait(timeout=FIRST_FRAME_TIMEOUT)
-            assert not release.is_set()
-            release.set()
-
-            completed = ""
-            for line in lines:
-                if line.startswith("event:"):
-                    names.append(line.split(":", 1)[1].strip())
-                elif line.startswith("data:") and names[-1] == "search.completed":
-                    completed = line.split(":", 1)[1].strip()
-                    break
+                completed = ""
+                for line in lines:
+                    if line.startswith("event:"):
+                        names.append(line.split(":", 1)[1].strip())
+                    elif line.startswith("data:") and names[-1] == "search.completed":
+                        completed = line.split(":", 1)[1].strip()
+                        break
+            finally:
+                release.set()
 
     assert names[0] == "search.started"
     assert names[-1] == "search.completed"
